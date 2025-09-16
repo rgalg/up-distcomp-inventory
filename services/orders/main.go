@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"strconv"
 	"sync"
 	"time"
@@ -93,7 +94,13 @@ type Product struct {
 }
 
 func getProduct(productID int) (*Product, error) {
-	resp, err := http.Get(fmt.Sprintf("http://products:8001/products/%d", productID))
+	// Use environment variable or default to localhost for local development
+	host := os.Getenv("PRODUCTS_HOST")
+	if host == "" {
+		host = "localhost"
+	}
+	
+	resp, err := http.Get(fmt.Sprintf("http://%s:8001/products/%d", host, productID))
 	if err != nil {
 		return nil, err
 	}
@@ -112,10 +119,16 @@ func getProduct(productID int) (*Product, error) {
 }
 
 func reserveInventory(productID, quantity int) error {
+	// Use environment variable or default to localhost for local development
+	host := os.Getenv("INVENTORY_HOST")
+	if host == "" {
+		host = "localhost"
+	}
+	
 	reqBody, _ := json.Marshal(map[string]int{"quantity": quantity})
 	
 	resp, err := http.Post(
-		fmt.Sprintf("http://inventory:8002/inventory/%d/reserve", productID),
+		fmt.Sprintf("http://%s:8002/inventory/%d/reserve", host, productID),
 		"application/json",
 		bytes.NewBuffer(reqBody),
 	)
@@ -132,10 +145,16 @@ func reserveInventory(productID, quantity int) error {
 }
 
 func fulfillInventory(productID, quantity int) error {
+	// Use environment variable or default to localhost for local development
+	host := os.Getenv("INVENTORY_HOST")
+	if host == "" {
+		host = "localhost"
+	}
+	
 	reqBody, _ := json.Marshal(map[string]int{"quantity": quantity})
 	
 	resp, err := http.Post(
-		fmt.Sprintf("http://inventory:8002/inventory/%d/fulfill", productID),
+		fmt.Sprintf("http://%s:8002/inventory/%d/fulfill", host, productID),
 		"application/json",
 		bytes.NewBuffer(reqBody),
 	)
