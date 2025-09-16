@@ -44,7 +44,7 @@ func NewOrderStore() *OrderStore {
 func (os *OrderStore) GetAll() []*Order {
 	os.mu.RLock()
 	defer os.mu.RUnlock()
-	
+
 	orders := make([]*Order, 0, len(os.orders))
 	for _, order := range os.orders {
 		orders = append(orders, order)
@@ -55,7 +55,7 @@ func (os *OrderStore) GetAll() []*Order {
 func (os *OrderStore) GetByID(id int) (*Order, bool) {
 	os.mu.RLock()
 	defer os.mu.RUnlock()
-	
+
 	order, exists := os.orders[id]
 	return order, exists
 }
@@ -63,7 +63,7 @@ func (os *OrderStore) GetByID(id int) (*Order, bool) {
 func (os *OrderStore) Create(order *Order) *Order {
 	os.mu.Lock()
 	defer os.mu.Unlock()
-	
+
 	order.ID = os.nextID
 	order.CreatedAt = time.Now()
 	order.Status = "pending"
@@ -75,12 +75,12 @@ func (os *OrderStore) Create(order *Order) *Order {
 func (os *OrderStore) UpdateStatus(id int, status string) error {
 	os.mu.Lock()
 	defer os.mu.Unlock()
-	
+
 	order, exists := os.orders[id]
 	if !exists {
 		return fmt.Errorf("order not found")
 	}
-	
+
 	order.Status = status
 	return nil
 }
@@ -99,22 +99,22 @@ func getProduct(productID int) (*Product, error) {
 	if host == "" {
 		host = "localhost"
 	}
-	
+
 	resp, err := http.Get(fmt.Sprintf("http://%s:8001/products/%d", host, productID))
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
-	
+
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("product not found")
 	}
-	
+
 	var product Product
 	if err := json.NewDecoder(resp.Body).Decode(&product); err != nil {
 		return nil, err
 	}
-	
+
 	return &product, nil
 }
 
@@ -124,9 +124,9 @@ func reserveInventory(productID, quantity int) error {
 	if host == "" {
 		host = "localhost"
 	}
-	
+
 	reqBody, _ := json.Marshal(map[string]int{"quantity": quantity})
-	
+
 	resp, err := http.Post(
 		fmt.Sprintf("http://%s:8002/inventory/%d/reserve", host, productID),
 		"application/json",
@@ -136,11 +136,11 @@ func reserveInventory(productID, quantity int) error {
 		return err
 	}
 	defer resp.Body.Close()
-	
+
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("failed to reserve inventory")
 	}
-	
+
 	return nil
 }
 
@@ -150,9 +150,9 @@ func fulfillInventory(productID, quantity int) error {
 	if host == "" {
 		host = "localhost"
 	}
-	
+
 	reqBody, _ := json.Marshal(map[string]int{"quantity": quantity})
-	
+
 	resp, err := http.Post(
 		fmt.Sprintf("http://%s:8002/inventory/%d/fulfill", host, productID),
 		"application/json",
@@ -162,18 +162,18 @@ func fulfillInventory(productID, quantity int) error {
 		return err
 	}
 	defer resp.Body.Close()
-	
+
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("failed to fulfill inventory")
 	}
-	
+
 	return nil
 }
 
 func getAllOrders(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
-	
+
 	orders := store.GetAll()
 	json.NewEncoder(w).Encode(orders)
 }
@@ -181,20 +181,20 @@ func getAllOrders(w http.ResponseWriter, r *http.Request) {
 func getOrder(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
-	
+
 	vars := mux.Vars(r)
 	id, err := strconv.Atoi(vars["id"])
 	if err != nil {
 		http.Error(w, "Invalid order ID", http.StatusBadRequest)
 		return
 	}
-	
+
 	order, exists := store.GetByID(id)
 	if !exists {
 		http.Error(w, "Order not found", http.StatusNotFound)
 		return
 	}
-	
+
 	json.NewEncoder(w).Encode(order)
 }
 
@@ -206,18 +206,18 @@ type CreateOrderRequest struct {
 func createOrder(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
-	
+
 	var req CreateOrderRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "Invalid JSON", http.StatusBadRequest)
 		return
 	}
-	
+
 	if len(req.Items) == 0 {
 		http.Error(w, "Order must contain at least one item", http.StatusBadRequest)
 		return
 	}
-	
+
 	// Calculate total amount and validate products
 	var totalAmount float64
 	for _, item := range req.Items {
@@ -226,22 +226,22 @@ func createOrder(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, fmt.Sprintf("Product %d not found", item.ProductID), http.StatusBadRequest)
 			return
 		}
-		
+
 		totalAmount += product.Price * float64(item.Quantity)
-		
+
 		// Try to reserve inventory
 		if err := reserveInventory(item.ProductID, item.Quantity); err != nil {
 			http.Error(w, fmt.Sprintf("Failed to reserve inventory for product %d: %v", item.ProductID, err), http.StatusBadRequest)
 			return
 		}
 	}
-	
+
 	order := &Order{
 		CustomerID:  req.CustomerID,
 		Items:       req.Items,
 		TotalAmount: totalAmount,
 	}
-	
+
 	createdOrder := store.Create(order)
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(createdOrder)
@@ -250,25 +250,25 @@ func createOrder(w http.ResponseWriter, r *http.Request) {
 func fulfillOrder(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
-	
+
 	vars := mux.Vars(r)
 	id, err := strconv.Atoi(vars["id"])
 	if err != nil {
 		http.Error(w, "Invalid order ID", http.StatusBadRequest)
 		return
 	}
-	
+
 	order, exists := store.GetByID(id)
 	if !exists {
 		http.Error(w, "Order not found", http.StatusNotFound)
 		return
 	}
-	
+
 	if order.Status != "pending" {
 		http.Error(w, "Order is not in pending status", http.StatusBadRequest)
 		return
 	}
-	
+
 	// Fulfill inventory for each item
 	for _, item := range order.Items {
 		if err := fulfillInventory(item.ProductID, item.Quantity); err != nil {
@@ -276,13 +276,13 @@ func fulfillOrder(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	
+
 	// Update order status
 	if err := store.UpdateStatus(id, "fulfilled"); err != nil {
 		http.Error(w, "Failed to update order status", http.StatusInternalServerError)
 		return
 	}
-	
+
 	updatedOrder, _ := store.GetByID(id)
 	json.NewEncoder(w).Encode(updatedOrder)
 }
@@ -292,32 +292,43 @@ func corsHandler(next http.Handler) http.Handler {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
-		
+
 		if r.Method == "OPTIONS" {
 			w.WriteHeader(http.StatusOK)
 			return
 		}
-		
+
 		next.ServeHTTP(w, r)
 	})
 }
 
 func main() {
 	store = NewOrderStore()
-	
+
 	r := mux.NewRouter()
 	r.Use(corsHandler)
-	
+
 	r.HandleFunc("/orders", getAllOrders).Methods("GET")
 	r.HandleFunc("/orders/{id}", getOrder).Methods("GET")
 	r.HandleFunc("/orders", createOrder).Methods("POST")
 	r.HandleFunc("/orders/{id}/fulfill", fulfillOrder).Methods("POST")
-	
+
+	// Handle CORS preflight for all /orders endpoints
+	r.HandleFunc("/orders", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}).Methods("OPTIONS")
+	r.HandleFunc("/orders/{id}", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}).Methods("OPTIONS")
+	r.HandleFunc("/orders/{id}/fulfill", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}).Methods("OPTIONS")
+
 	r.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		fmt.Fprint(w, "Orders service is healthy")
 	}).Methods("GET")
-	
+
 	fmt.Println("Orders service starting on port 8003...")
 	log.Fatal(http.ListenAndServe(":8003", r))
 }
