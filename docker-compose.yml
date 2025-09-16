@@ -1,0 +1,62 @@
+services:
+  products:
+    build:
+      context: ./services/products
+      dockerfile: Dockerfile
+    ports:
+      - "8001:8001"
+    networks:
+      - inventory-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8001/health"]
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+
+  inventory:
+    build:
+      context: ./services/inventory
+      dockerfile: Dockerfile
+    ports:
+      - "8002:8002"
+    networks:
+      - inventory-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8002/health"]
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+
+  orders:
+    build:
+      context: ./services/orders
+      dockerfile: Dockerfile
+    ports:
+      - "8003:8003"
+    networks:
+      - inventory-network
+    depends_on:
+      - products
+      - inventory
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8003/health"]
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:80"
+    networks:
+      - inventory-network
+    depends_on:
+      - products
+      - inventory
+      - orders
+
+networks:
+  inventory-network:
+    driver: bridge
