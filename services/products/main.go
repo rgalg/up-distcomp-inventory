@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -132,41 +133,62 @@ func corsHandler(next http.Handler) http.Handler {
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
 
-		if r.Method == "OPTIONS" {
-			w.WriteHeader(http.StatusOK)
-			return
-		}
-
-		next.ServeHTTP(w, r)
-	})
-}
-
-// CORS middleware
-func withCORS(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+		// CORS preflight request (OPTIONS) handling
 		if r.Method == http.MethodOptions {
 			w.WriteHeader(http.StatusOK)
 			return
 		}
+
 		next.ServeHTTP(w, r)
 	})
 }
 
 func main() {
+	// -------------------------------------------------------------------
+	// data (volatile for now)
+	// -------------------------------------------------------------------
 	store = NewProductStore()
-	r := mux.NewRouter()
-	r.Use(withCORS)
-	r.HandleFunc("/products", getAllProducts).Methods("GET")
-	r.HandleFunc("/products/{id}", getProduct).Methods("GET")
-	r.HandleFunc("/products", createProduct).Methods("POST")
+	// -------------------------------------------------------------------
 
+	// -------------------------------------------------------------------
+	// router (handler)
+	// -------------------------------------------------------------------
+	r := mux.NewRouter()
+	r.Use(corsHandler)
+	// -------------------------------------------------------------------
+
+	// -------------------------------------------------------------------
+	// service endpoints
+	// -------------------------------------------------------------------
+	// GET requests
+	r.HandleFunc("/products", getAllProducts).Methods(http.MethodGet)
+	r.HandleFunc("/products/{id}", getProduct).Methods(http.MethodGet)
+	// POST requests
+	r.HandleFunc("/products", createProduct).Methods(http.MethodPost)
+	// -------------------------------------------------------------------
+	// CORS preflight (OPTIONS) requests for all endpoints
+	r.HandleFunc("/products", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}).Methods(http.MethodOptions)
+	r.HandleFunc("/products/{id}", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}).Methods(http.MethodOptions)
+	// -------------------------------------------------------------------
+	// health check endpoint
+	r.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprint(w, "Products service is healthy")
+	}).Methods(http.MethodGet)
+	// -------------------------------------------------------------------
+
+	// -------------------------------------------------------------------
+	// exposing the service
+	// -------------------------------------------------------------------
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8001"
 	}
-	log.Printf("Products service listening on port %s", port)
-	log.Fatal(http.ListenAndServe(":"+port, r))
+	log.Printf("Products service starting on port %s", port)
+	log.Fatal(http.ListenAndServe(":"+port, r)) // log and os.Exit(1)
+	// -------------------------------------------------------------------
 }

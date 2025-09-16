@@ -293,7 +293,8 @@ func corsHandler(next http.Handler) http.Handler {
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
 
-		if r.Method == "OPTIONS" {
+		// CORS preflight request (OPTIONS) handling
+		if r.Method == http.MethodOptions {
 			w.WriteHeader(http.StatusOK)
 			return
 		}
@@ -303,32 +304,55 @@ func corsHandler(next http.Handler) http.Handler {
 }
 
 func main() {
+	// -------------------------------------------------------------------
+	// data (volatile for now)
+	// -------------------------------------------------------------------
 	store = NewOrderStore()
+	// -------------------------------------------------------------------
 
+	// -------------------------------------------------------------------
+	// router (handler)
+	// -------------------------------------------------------------------
 	r := mux.NewRouter()
 	r.Use(corsHandler)
+	// -------------------------------------------------------------------
 
-	r.HandleFunc("/orders", getAllOrders).Methods("GET")
-	r.HandleFunc("/orders/{id}", getOrder).Methods("GET")
-	r.HandleFunc("/orders", createOrder).Methods("POST")
-	r.HandleFunc("/orders/{id}/fulfill", fulfillOrder).Methods("POST")
-
-	// Handle CORS preflight for all /orders endpoints
+	// -------------------------------------------------------------------
+	// service endpoints
+	// -------------------------------------------------------------------
+	// GET requests
+	r.HandleFunc("/orders", getAllOrders).Methods(http.MethodGet)
+	r.HandleFunc("/orders/{id}", getOrder).Methods(http.MethodGet)
+	// POST requests
+	r.HandleFunc("/orders", createOrder).Methods(http.MethodPost)
+	r.HandleFunc("/orders/{id}/fulfill", fulfillOrder).Methods(http.MethodPost)
+	// -------------------------------------------------------------------
+	// CORS preflight (OPTIONS) requests for all endpoints
 	r.HandleFunc("/orders", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-	}).Methods("OPTIONS")
+	}).Methods(http.MethodOptions)
 	r.HandleFunc("/orders/{id}", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-	}).Methods("OPTIONS")
+	}).Methods(http.MethodOptions)
 	r.HandleFunc("/orders/{id}/fulfill", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-	}).Methods("OPTIONS")
-
+	}).Methods(http.MethodOptions)
+	// -------------------------------------------------------------------
+	// health check endpoint
 	r.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		fmt.Fprint(w, "Orders service is healthy")
 	}).Methods("GET")
+	// -------------------------------------------------------------------
 
-	fmt.Println("Orders service starting on port 8003...")
-	log.Fatal(http.ListenAndServe(":8003", r))
+	// -------------------------------------------------------------------
+	// exposing the service
+	// -------------------------------------------------------------------
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8003"
+	}
+	log.Printf("Orders service starting on port %s", port)
+	log.Fatal(http.ListenAndServe(":"+port, r)) // log and os.Exit(1)
+	// -------------------------------------------------------------------
 }

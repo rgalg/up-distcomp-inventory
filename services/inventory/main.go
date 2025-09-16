@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"strconv"
 	"sync"
 
@@ -258,7 +259,8 @@ func corsHandler(next http.Handler) http.Handler {
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
 
-		if r.Method == "OPTIONS" {
+		// CORS preflight request (OPTIONS) handling
+		if r.Method == http.MethodOptions {
 			w.WriteHeader(http.StatusOK)
 			return
 		}
@@ -268,22 +270,60 @@ func corsHandler(next http.Handler) http.Handler {
 }
 
 func main() {
+	// -------------------------------------------------------------------
+	// data (volatile for now)
+	// -------------------------------------------------------------------
 	store = NewInventoryStore()
+	// -------------------------------------------------------------------
 
+	// -------------------------------------------------------------------
+	// router (handler)
+	// -------------------------------------------------------------------
 	r := mux.NewRouter()
 	r.Use(corsHandler)
+	// -------------------------------------------------------------------
 
-	r.HandleFunc("/inventory", getAllInventory).Methods("GET")
-	r.HandleFunc("/inventory/{productId}", getInventoryByProduct).Methods("GET")
-	r.HandleFunc("/inventory/{productId}", updateInventory).Methods("PUT")
-	r.HandleFunc("/inventory/{productId}/reserve", reserveInventory).Methods("POST")
-	r.HandleFunc("/inventory/{productId}/fulfill", fulfillReservation).Methods("POST")
-
+	// -------------------------------------------------------------------
+	// service endpoints
+	// -------------------------------------------------------------------
+	// GET requests
+	r.HandleFunc("/inventory", getAllInventory).Methods(http.MethodGet)
+	r.HandleFunc("/inventory/{productId}", getInventoryByProduct).Methods(http.MethodGet)
+	// PUT requests
+	r.HandleFunc("/inventory/{productId}", updateInventory).Methods(http.MethodPut)
+	// POST requests
+	r.HandleFunc("/inventory/{productId}/reserve", reserveInventory).Methods(http.MethodPost)
+	r.HandleFunc("/inventory/{productId}/fulfill", fulfillReservation).Methods(http.MethodPost)
+	// -------------------------------------------------------------------
+	// CORS preflight (OPTIONS) requests for all endpoints
+	r.HandleFunc("/inventory", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}).Methods(http.MethodOptions)
+	r.HandleFunc("/inventory/{productId}", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}).Methods(http.MethodOptions)
+	r.HandleFunc("/inventory/{productId}/reserve", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}).Methods(http.MethodOptions)
+	r.HandleFunc("/inventory/{productId}/fulfill", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}).Methods(http.MethodOptions)
+	// -------------------------------------------------------------------
+	// health check endpoint
 	r.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		fmt.Fprint(w, "Inventory service is healthy")
-	}).Methods("GET")
+	}).Methods(http.MethodGet)
+	// -------------------------------------------------------------------
 
-	fmt.Println("Inventory service starting on port 8002...")
-	log.Fatal(http.ListenAndServe(":8002", r))
+	// -------------------------------------------------------------------
+	// exposing the service
+	// -------------------------------------------------------------------
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8002"
+	}
+	log.Printf("Inventory service starting on port %s", port)
+	log.Fatal(http.ListenAndServe(":"+port, r)) // log and os.Exit(1)
+	// -------------------------------------------------------------------
 }
