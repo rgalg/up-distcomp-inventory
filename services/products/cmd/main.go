@@ -46,19 +46,23 @@ func main() {
 	// service endpoints
 	// -------------------------------------------------------------------
 	r := mux.NewRouter()
+	// CORS preflight (OPTIONS) requests for all endpoints
+	r.PathPrefix("/products").Methods(http.MethodOptions).HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		products_handler_http.AddCORSHeaders(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+		})).ServeHTTP(w, r)
+	})
 	// GET all products
 	r.Handle("/products", products_handler_http.AddCORSHeaders(http.HandlerFunc(handler.Get_All))).Methods(http.MethodGet)
 	// GET product by productId
 	r.Handle("/products/{productId}", products_handler_http.AddCORSHeaders(http.HandlerFunc(handler.Get_ByProductID))).Methods(http.MethodGet)
 	// POST create product
 	r.Handle("/products", products_handler_http.AddCORSHeaders(http.HandlerFunc(handler.Create_Product))).Methods(http.MethodPost)
-	// CORS preflight (OPTIONS) requests for all endpoints
-	r.HandleFunc("/products", func(w http.ResponseWriter, r *http.Request) {
+	// Health check endpoint
+	r.Handle("/health", products_handler_http.AddCORSHeaders(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-	}).Methods(http.MethodOptions)
-	r.HandleFunc("/products/{productId}", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-	}).Methods(http.MethodOptions)
+		fmt.Fprint(w, "Products service is healthy")
+	}))).Methods(http.MethodGet)
 	// -------------------------------------------------------------------
 
 	// -------------------------------------------------------------------
