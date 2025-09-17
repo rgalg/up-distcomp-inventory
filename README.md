@@ -1,24 +1,29 @@
 # Inventory Management System
 
-A microservices-based inventory management application built with Go backend services and a simple web frontend.
+A microservices-based inventory management application built with Go backend services, Consul service discovery, and a simple web frontend.
 
 ## Architecture
 
-This application consists of four main components:
+This application consists of five main components:
 
 ### Backend Microservices (Go)
 1. **Products Service** (Port 8001) - Manages product catalog
 2. **Inventory Service** (Port 8002) - Tracks stock levels and reservations
 3. **Orders Service** (Port 8003) - Handles order processing
 
+### Service Discovery
+4. **Consul** (Port 8500) - Service discovery and health checking
+
 ### Frontend
-4. **Web Application** (Port 3000) - Simple HTML/CSS/JS interface
+5. **Web Application** (Port 3000) - Simple HTML/CSS/JS interface
 
 ## Features
 
 - **Product Management**: View and manage product catalog
 - **Inventory Tracking**: Real-time stock levels with reservation system
 - **Order Processing**: Create and fulfill orders with automatic inventory updates
+- **Service Discovery**: Consul-based service discovery for dynamic service location
+- **Health Checking**: Automatic health monitoring of all services
 - **Microservices Architecture**: Independent, containerized services
 - **RESTful APIs**: Clean API interfaces between services
 - **Web Interface**: User-friendly frontend for all operations
@@ -47,6 +52,7 @@ docker-compose up --build
 - **Products API**: http://localhost:8001
 - **Inventory API**: http://localhost:8002
 - **Orders API**: http://localhost:8003
+- **Consul UI**: http://localhost:8500 (Service discovery dashboard)
 
 ## API Documentation
 
@@ -167,12 +173,38 @@ cd ../inventory && go build -o inventory .
 cd ../orders && go build -o orders .
 ```
 
-## Service Communication
+## Service Communication & Discovery
 
+- **Service Discovery**: Consul-based service discovery automatically locates service instances
+- **Health Monitoring**: Consul health checks ensure only healthy services are discovered
+- **Fallback Support**: Services gracefully fallback to environment variables if Consul is unavailable
 - Orders service communicates with Products service to validate products and get pricing
 - Orders service communicates with Inventory service to reserve and fulfill stock
 - All services expose health check endpoints at `/health`
 - Services use Docker networking for internal communication
+
+### Consul Integration
+
+Each service:
+1. Registers itself with Consul on startup
+2. Uses Consul to discover other services dynamically  
+3. Implements health checks for monitoring
+4. Gracefully deregisters on shutdown
+
+Service discovery flow:
+1. Orders service needs to call Products/Inventory services
+2. Queries Consul for healthy service instances
+3. Uses discovered endpoint for HTTP calls
+4. Falls back to environment variables if Consul unavailable
+
+## Service Discovery Configuration
+
+Services can be configured with environment variables:
+
+- `CONSUL_HOST`: Consul server hostname (default: localhost)
+- `SERVICE_NAME`: Name to register in Consul
+- `SERVICE_PORT`: Port number for service registration
+- `PORT`: Port the service listens on
 
 ## Sample Data
 
@@ -191,6 +223,7 @@ The application starts with sample data:
 ## Technology Stack
 
 - **Backend**: Go 1.21+ with Gorilla Mux router
+- **Service Discovery**: HashiCorp Consul
 - **Frontend**: HTML5, CSS3, Vanilla JavaScript
 - **Containerization**: Docker & Docker Compose
 - **Networking**: Docker bridge networking
@@ -201,4 +234,5 @@ The application starts with sample data:
 - **Scalability**: Each service can be scaled independently
 - **Maintainability**: Clear separation of concerns
 - **Reliability**: Service isolation prevents cascade failures
+- **Service Discovery**: Dynamic service location with health monitoring
 - **Flexibility**: Easy to modify or replace individual services
