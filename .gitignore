@@ -35,3 +35,7 @@ Thumbs.db
 
 # temp files
 *.temp*
+# Build artifacts
+services/*/products-service
+services/*/inventory-service
+services/*/orders-service
