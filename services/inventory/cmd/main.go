@@ -10,6 +10,8 @@ import (
 	inventory_controller "inventory-service/internal/controller"
 	inventory_handler_http "inventory-service/internal/handler"
 	inventory_repository "inventory-service/internal/repository"
+
+	"github.com/gorilla/mux"
 )
 
 func main() {
@@ -41,54 +43,50 @@ func main() {
 	// -------------------------------------------------------------------
 
 	// -------------------------------------------------------------------
-	// router (handler)
-	// -------------------------------------------------------------------
-	// r := mux.NewRouter()
-	// r.Use(inventory_handler_http.corsHandler)
-	// -------------------------------------------------------------------
-
-	// -------------------------------------------------------------------
 	// service endpoints
 	// -------------------------------------------------------------------
-	// GET requests
-	// r.HandleFunc("/inventory", inventory_handler_http.Handler_Inventory.getAllInventory).Methods(http.MethodGet)
-	// // r.HandleFunc("/inventory/{productId}", getInventoryByProduct).Methods(http.MethodGet)
-	// // // PUT requests
-	// // r.HandleFunc("/inventory/{productId}", updateInventory).Methods(http.MethodPut)
-	// // // POST requests
-	// // r.HandleFunc("/inventory/{productId}/reserve", reserveInventory).Methods(http.MethodPost)
-	// // r.HandleFunc("/inventory/{productId}/fulfill", fulfillReservation).Methods(http.MethodPost)
-	// // -------------------------------------------------------------------
-	// // CORS preflight (OPTIONS) requests for all endpoints
-	// r.HandleFunc("/inventory", func(w http.ResponseWriter, r *http.Request) {
-	// 	w.WriteHeader(http.StatusOK)
-	// }).Methods(http.MethodOptions)
-	// r.HandleFunc("/inventory/{productId}", func(w http.ResponseWriter, r *http.Request) {
-	// 	w.WriteHeader(http.StatusOK)
-	// }).Methods(http.MethodOptions)
-	// r.HandleFunc("/inventory/{productId}/reserve", func(w http.ResponseWriter, r *http.Request) {
-	// 	w.WriteHeader(http.StatusOK)
-	// }).Methods(http.MethodOptions)
-	// r.HandleFunc("/inventory/{productId}/fulfill", func(w http.ResponseWriter, r *http.Request) {
-	// 	w.WriteHeader(http.StatusOK)
-	// }).Methods(http.MethodOptions)
-	// // -------------------------------------------------------------------
-	// // health check endpoint
-	// r.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
-	// 	w.WriteHeader(http.StatusOK)
-	// 	fmt.Fprint(w, "Inventory service is healthy")
-	// }).Methods(http.MethodGet)
+	r := mux.NewRouter()
+	// GET all inventory
+	r.Handle("/inventory", inventory_handler_http.AddCORSHeaders(http.HandlerFunc(handler.Get_All))).Methods(http.MethodGet)
+	// GET inventory by productId
+	r.Handle("/inventory/{productId}", inventory_handler_http.AddCORSHeaders(http.HandlerFunc(handler.Get_ByProductID))).Methods(http.MethodGet)
+	// PUT update stock
+	r.Handle("/inventory/{productId}", inventory_handler_http.AddCORSHeaders(http.HandlerFunc(handler.Update_Stock))).Methods(http.MethodPut)
+	// POST reserve stock
+	r.Handle("/inventory/{productId}/reserve", inventory_handler_http.AddCORSHeaders(http.HandlerFunc(handler.Reserve_Stock))).Methods(http.MethodPost)
+	// POST release reservation
+	r.Handle("/inventory/{productId}/release_reservation", inventory_handler_http.AddCORSHeaders(http.HandlerFunc(handler.Release_Reservation))).Methods(http.MethodPost)
+	// POST fulfill reservation
+	r.Handle("/inventory/{productId}/fulfill", inventory_handler_http.AddCORSHeaders(http.HandlerFunc(handler.Fulfill_Reservation))).Methods(http.MethodPost)
+	// CORS preflight (OPTIONS) for all endpoints
+	r.HandleFunc("/inventory", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}).Methods(http.MethodOptions)
+	r.HandleFunc("/inventory/{productId}", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}).Methods(http.MethodOptions)
+	r.HandleFunc("/inventory/{productId}/reserve", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}).Methods(http.MethodOptions)
+	r.HandleFunc("/inventory/{productId}/release_reservation", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}).Methods(http.MethodOptions)
+	r.HandleFunc("/inventory/{productId}/fulfill", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}).Methods(http.MethodOptions)
+	// Health check endpoint
+	r.Handle("/health", inventory_handler_http.AddCORSHeaders(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprint(w, "Inventory service is healthy")
+	}))).Methods(http.MethodGet)
 	// -------------------------------------------------------------------
-
-	http.Handle("/inventory", inventory_handler_http.AddCORSHeaders(http.HandlerFunc(handler.Get_All)))
 
 	// -------------------------------------------------------------------
 	// exposing the service
 	// -------------------------------------------------------------------
-	err = http.ListenAndServe(fmt.Sprintf(":%d", port), nil)
+	err = http.ListenAndServe(fmt.Sprintf(":%d", port), r)
 	if err != nil {
 		panic(err)
 	}
-	// log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", port), r)) // log and os.Exit(1)
 	// -------------------------------------------------------------------
 }

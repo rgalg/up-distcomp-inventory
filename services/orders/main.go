@@ -125,7 +125,7 @@ func reserveInventory(productID, quantity int) error {
 		host = "localhost"
 	}
 
-	reqBody, _ := json.Marshal(map[string]int{"quantity": quantity})
+	reqBody, _ := json.Marshal(map[string]int{"stock": quantity})
 
 	resp, err := http.Post(
 		fmt.Sprintf("http://%s:8002/inventory/%d/reserve", host, productID),
@@ -138,7 +138,15 @@ func reserveInventory(productID, quantity int) error {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("failed to reserve inventory")
+		// Try to read backend error message for better debugging
+		var backendMsg string
+		buf := new(bytes.Buffer)
+		buf.ReadFrom(resp.Body)
+		backendMsg = buf.String()
+		if backendMsg == "" {
+			backendMsg = resp.Status
+		}
+		return fmt.Errorf("failed to reserve inventory: %s", backendMsg)
 	}
 
 	return nil
@@ -151,7 +159,7 @@ func fulfillInventory(productID, quantity int) error {
 		host = "localhost"
 	}
 
-	reqBody, _ := json.Marshal(map[string]int{"quantity": quantity})
+	reqBody, _ := json.Marshal(map[string]int{"stock": quantity})
 
 	resp, err := http.Post(
 		fmt.Sprintf("http://%s:8002/inventory/%d/fulfill", host, productID),

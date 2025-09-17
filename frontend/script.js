@@ -259,6 +259,8 @@ async function handleOrderSubmit(e) {
     const customerId = parseInt(document.getElementById('customer-id').value);
     const orderItems = document.querySelectorAll('.order-item');
     
+    // Note: The backend inventory service expects { stock: ... } for reservation,
+    // but the orders service handles this mapping. The frontend should keep using 'quantity'.
     const items = [];
     for (let item of orderItems) {
         const productId = parseInt(item.querySelector('.product-select').value);
