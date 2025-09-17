@@ -154,7 +154,7 @@ function displayInventory(inventory) {
     container.innerHTML = inventory.map(item => {
         const product = products.find(p => p.id === item.product_id);
         const productName = product ? product.name : `Product ${item.product_id}`;
-        const available = item.quantity - item.reserved;
+        const available = item.stock - item.reserved;
         
         return `
             <div class="item-card">
@@ -164,7 +164,7 @@ function displayInventory(inventory) {
                     <span class="stock-available">Available: ${available}</span>
                     <span class="stock-reserved">Reserved: ${item.reserved}</span>
                 </div>
-                <p><strong>Total Stock:</strong> ${item.quantity}</p>
+                <p><strong>Total Stock:</strong> ${item.stock}</p>
             </div>
         `;
     }).join('');
