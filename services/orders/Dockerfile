@@ -10,6 +10,7 @@ ENV GOPROXY=direct
 
 # Copy go mod files first for better caching
 COPY go.mod go.sum ./
+RUN apk add --no-cache git
 RUN go mod download
 
 COPY . .
