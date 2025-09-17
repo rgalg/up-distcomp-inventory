@@ -19,14 +19,14 @@ This application consists of five main components:
 
 ## Features
 
-- **Product Management**: View and manage product catalog
-- **Inventory Tracking**: Real-time stock levels with reservation system
+- **Product Management**: View and manage product catalog including product categories and descriptions
+- **Inventory Tracking**: Real-time stock levels with reservation system to avoid overserving
 - **Order Processing**: Create and fulfill orders with automatic inventory updates
 - **Service Discovery**: Consul-based service discovery for dynamic service location
 - **Health Checking**: Automatic health monitoring of all services
 - **Microservices Architecture**: Independent, containerized services
-- **RESTful APIs**: Clean API interfaces between services
-- **Web Interface**: User-friendly frontend for all operations
+- **RESTful APIs**: API interfaces between services
+- **Web Interface**: User-friendly frontend to create and fulfill orders
 
 ## Quick Start
 
@@ -36,10 +36,11 @@ This application consists of five main components:
 
 ### Running the Application
 
+Hiram doesn't need this, but it can't hurt I guess:
 1. Clone the repository:
 ```bash
 git clone <repository-url>
-cd up-compdist-inventory
+cd up-distcomp-inventory
 ```
 
 2. Start all services with Docker Compose:
@@ -199,7 +200,7 @@ Service discovery flow:
 
 ## Service Discovery Configuration
 
-Services can be configured with environment variables:
+Services can be configured with environment variables specified in the docker-compose.yml file:
 
 - `CONSUL_HOST`: Consul server hostname (default: localhost)
 - `SERVICE_NAME`: Name to register in Consul
@@ -218,7 +219,8 @@ The application starts with sample data:
 - Desk Chair ($149.99)
 
 **Inventory:**
-- Each product has initial stock levels with some reserved quantities
+- Each product has non-zero initial stock levels
+- As there are no unfulfilled orders in the initial mock data, there is no reserved stock for any product either
 
 ## Technology Stack
 
@@ -227,7 +229,7 @@ The application starts with sample data:
 - **Frontend**: HTML5, CSS3, Vanilla JavaScript
 - **Containerization**: Docker & Docker Compose
 - **Networking**: Docker bridge networking
-- **Data Storage**: In-memory (for simplicity)
+- **Data Storage**: Volatile for now
 
 ## Architecture Benefits
 
