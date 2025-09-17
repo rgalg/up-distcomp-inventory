@@ -5,13 +5,16 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
 	"strconv"
+	"syscall"
 
 	products_controller "products-service/internal/controller"
 	products_handler_http "products-service/internal/handler"
 	products_repository "products-service/internal/repository"
 
 	"github.com/gorilla/mux"
+	consul "products-service/pkg/consul"
 )
 
 func main() {
@@ -26,12 +29,47 @@ func main() {
 	// -------------------------------------------------------------------
 	// variable initialization
 	// -------------------------------------------------------------------
-	// getting the service port from environment variable or defaulting to 8002
+	// getting the service port from environment variable or defaulting to 8001
 	port, err = strconv.Atoi(os.Getenv("PORT"))
 	if err != nil {
 		port = 8001
 	}
 	log.Printf("Products service starting on port %d", port)
+
+	// Initialize Consul client
+	consulClient, err := consul.NewClient()
+	if err != nil {
+		log.Printf("Failed to create consul client: %v", err)
+		log.Printf("Continuing without service discovery...")
+		consulClient = nil
+	} else {
+		// Wait for Consul to be available
+		err = consulClient.WaitForConsul(10)
+		if err != nil {
+			log.Printf("Consul not available: %v", err)
+			log.Printf("Continuing without service discovery...")
+			consulClient = nil
+		} else {
+			// Register service with Consul
+			err = consulClient.RegisterService()
+			if err != nil {
+				log.Printf("Failed to register service with Consul: %v", err)
+			}
+
+			// Setup graceful shutdown to deregister service
+			go func() {
+				sigChan := make(chan os.Signal, 1)
+				signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+				<-sigChan
+				log.Println("Received shutdown signal, deregistering service...")
+				if consulClient != nil {
+					consulClient.DeregisterService()
+				}
+				os.Exit(0)
+			}()
+		}
+	}
+
 	// initializing context
 	//ctx = context.Background()
 	// volatile data repository

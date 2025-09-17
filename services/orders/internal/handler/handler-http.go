@@ -15,16 +15,32 @@ import (
 	orders_controller "orders-service/internal/controller"
 	orders_dmodel "orders-service/pkg"
 	products_dmodel "orders-service/pkg/products"
+	consul "orders-service/pkg/consul"
 )
 
-func getProduct(productID int) (*products_dmodel.Product, error) {
-	// Use environment variable or default to localhost for local development
-	host := os.Getenv("PRODUCTS_HOST")
-	if host == "" {
-		host = "localhost"
+func (h *Handler_Orders) getProduct(productID int) (*products_dmodel.Product, error) {
+	var host string
+	var err error
+
+	// Try to discover service via Consul first
+	if h.consulClient != nil {
+		host, err = h.consulClient.DiscoverService("products")
+		if err != nil {
+			log.Printf("Failed to discover products service via Consul: %v", err)
+		}
 	}
 
-	resp, err := http.Get(fmt.Sprintf("http://%s:8001/products/%d", host, productID))
+	// Fallback to environment variable or localhost
+	if host == "" {
+		envHost := os.Getenv("PRODUCTS_HOST")
+		if envHost == "" {
+			host = "localhost:8001"
+		} else {
+			host = fmt.Sprintf("%s:8001", envHost)
+		}
+	}
+
+	resp, err := http.Get(fmt.Sprintf("http://%s/products/%d", host, productID))
 	if err != nil {
 		return nil, err
 	}
@@ -42,17 +58,32 @@ func getProduct(productID int) (*products_dmodel.Product, error) {
 	return &product, nil
 }
 
-func reserveInventory(productID, quantity int) error {
-	// Use environment variable or default to localhost for local development
-	host := os.Getenv("INVENTORY_HOST")
+func (h *Handler_Orders) reserveInventory(productID, quantity int) error {
+	var host string
+	var err error
+
+	// Try to discover service via Consul first
+	if h.consulClient != nil {
+		host, err = h.consulClient.DiscoverService("inventory")
+		if err != nil {
+			log.Printf("Failed to discover inventory service via Consul: %v", err)
+		}
+	}
+
+	// Fallback to environment variable or localhost
 	if host == "" {
-		host = "localhost"
+		envHost := os.Getenv("INVENTORY_HOST")
+		if envHost == "" {
+			host = "localhost:8002"
+		} else {
+			host = fmt.Sprintf("%s:8002", envHost)
+		}
 	}
 
 	reqBody, _ := json.Marshal(map[string]int{"stock": quantity})
 
 	resp, err := http.Post(
-		fmt.Sprintf("http://%s:8002/inventory/%d/reserve", host, productID),
+		fmt.Sprintf("http://%s/inventory/%d/reserve", host, productID),
 		"application/json",
 		bytes.NewBuffer(reqBody),
 	)
@@ -76,17 +107,32 @@ func reserveInventory(productID, quantity int) error {
 	return nil
 }
 
-func fulfillInventory(productID, quantity int) error {
-	// Use environment variable or default to localhost for local development
-	host := os.Getenv("INVENTORY_HOST")
+func (h *Handler_Orders) fulfillInventory(productID, quantity int) error {
+	var host string
+	var err error
+
+	// Try to discover service via Consul first
+	if h.consulClient != nil {
+		host, err = h.consulClient.DiscoverService("inventory")
+		if err != nil {
+			log.Printf("Failed to discover inventory service via Consul: %v", err)
+		}
+	}
+
+	// Fallback to environment variable or localhost
 	if host == "" {
-		host = "localhost"
+		envHost := os.Getenv("INVENTORY_HOST")
+		if envHost == "" {
+			host = "localhost:8002"
+		} else {
+			host = fmt.Sprintf("%s:8002", envHost)
+		}
 	}
 
 	reqBody, _ := json.Marshal(map[string]int{"stock": quantity})
 
 	resp, err := http.Post(
-		fmt.Sprintf("http://%s:8002/inventory/%d/fulfill", host, productID),
+		fmt.Sprintf("http://%s/inventory/%d/fulfill", host, productID),
 		"application/json",
 		bytes.NewBuffer(reqBody),
 	)
@@ -119,12 +165,14 @@ func AddCORSHeaders(next http.Handler) http.Handler {
 }
 
 type Handler_Orders struct {
-	controller *orders_controller.Controller_Orders
+	controller   *orders_controller.Controller_Orders
+	consulClient *consul.Client
 }
 
-func New(controller *orders_controller.Controller_Orders) *Handler_Orders {
+func New(controller *orders_controller.Controller_Orders, consulClient *consul.Client) *Handler_Orders {
 	return &Handler_Orders{
-		controller: controller,
+		controller:   controller,
+		consulClient: consulClient,
 	}
 }
 
@@ -204,7 +252,7 @@ func (h *Handler_Orders) Create_Order(w http.ResponseWriter, r *http.Request) {
 	// Calculate total amount and validate products
 	var totalAmount float64
 	for _, item := range template_req.Items {
-		product, err := getProduct(item.ProductID)
+		product, err := h.getProduct(item.ProductID)
 		if err != nil {
 			http.Error(w, fmt.Sprintf("Product %d not found", item.ProductID), http.StatusBadRequest)
 			return
@@ -213,7 +261,7 @@ func (h *Handler_Orders) Create_Order(w http.ResponseWriter, r *http.Request) {
 		totalAmount += product.Price * float64(item.Quantity)
 
 		// Try to reserve inventory
-		if err := reserveInventory(item.ProductID, item.Quantity); err != nil {
+		if err := h.reserveInventory(item.ProductID, item.Quantity); err != nil {
 			http.Error(w, fmt.Sprintf("Failed to reserve inventory for product %d: %v", item.ProductID, err), http.StatusBadRequest)
 			return
 		}
@@ -299,7 +347,7 @@ func (h *Handler_Orders) Fulfill_Order(w http.ResponseWriter, r *http.Request) {
 
 	// Fulfill inventory for each item
 	for _, item := range order.Items {
-		if err := fulfillInventory(item.ProductID, item.Quantity); err != nil {
+		if err := h.fulfillInventory(item.ProductID, item.Quantity); err != nil {
 			http.Error(w, fmt.Sprintf("Failed to fulfill inventory: %v", err), http.StatusInternalServerError)
 			return
 		}
