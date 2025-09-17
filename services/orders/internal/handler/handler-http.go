@@ -1,18 +1,106 @@
 package orders_handler_http
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"strconv"
 
 	"github.com/gorilla/mux"
 
-	"orders-service/internal"
+	internal "orders-service/internal"
 	orders_controller "orders-service/internal/controller"
-	dmodel "orders-service/pkg"
+	orders_dmodel "orders-service/pkg"
+	products_dmodel "orders-service/pkg/products"
 )
+
+func getProduct(productID int) (*products_dmodel.Product, error) {
+	// Use environment variable or default to localhost for local development
+	host := os.Getenv("PRODUCTS_HOST")
+	if host == "" {
+		host = "localhost"
+	}
+
+	resp, err := http.Get(fmt.Sprintf("http://%s:8001/products/%d", host, productID))
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("product not found")
+	}
+
+	var product products_dmodel.Product
+	if err := json.NewDecoder(resp.Body).Decode(&product); err != nil {
+		return nil, err
+	}
+
+	return &product, nil
+}
+
+func reserveInventory(productID, quantity int) error {
+	// Use environment variable or default to localhost for local development
+	host := os.Getenv("INVENTORY_HOST")
+	if host == "" {
+		host = "localhost"
+	}
+
+	reqBody, _ := json.Marshal(map[string]int{"stock": quantity})
+
+	resp, err := http.Post(
+		fmt.Sprintf("http://%s:8002/inventory/%d/reserve", host, productID),
+		"application/json",
+		bytes.NewBuffer(reqBody),
+	)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		// Try to read backend error message for better debugging
+		var backendMsg string
+		buf := new(bytes.Buffer)
+		buf.ReadFrom(resp.Body)
+		backendMsg = buf.String()
+		if backendMsg == "" {
+			backendMsg = resp.Status
+		}
+		return fmt.Errorf("failed to reserve inventory: %s", backendMsg)
+	}
+
+	return nil
+}
+
+func fulfillInventory(productID, quantity int) error {
+	// Use environment variable or default to localhost for local development
+	host := os.Getenv("INVENTORY_HOST")
+	if host == "" {
+		host = "localhost"
+	}
+
+	reqBody, _ := json.Marshal(map[string]int{"stock": quantity})
+
+	resp, err := http.Post(
+		fmt.Sprintf("http://%s:8002/inventory/%d/fulfill", host, productID),
+		"application/json",
+		bytes.NewBuffer(reqBody),
+	)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("failed to fulfill inventory")
+	}
+
+	return nil
+}
 
 func AddCORSHeaders(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -68,7 +156,7 @@ func (h *Handler_Orders) Get_ByOrderID(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	r_params := mux.Vars(r)
-	orderID, err := strconv.Atoi(r_params["id"])
+	orderID, err := strconv.Atoi(r_params["orderId"])
 	if err != nil {
 		http.Error(w, "Invalid order ID", http.StatusBadRequest)
 		return
@@ -100,8 +188,8 @@ func (h *Handler_Orders) Create_Order(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	var template_req struct {
-		CustomerID int                `json:"customer_id"`
-		Items      []dmodel.OrderItem `json:"items"`
+		CustomerID int                       `json:"customer_id"`
+		Items      []orders_dmodel.OrderItem `json:"items"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&template_req); err != nil {
 		http.Error(w, "Invalid JSON", http.StatusBadRequest)
@@ -131,13 +219,19 @@ func (h *Handler_Orders) Create_Order(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	order := &Order{
-		CustomerID:  req.CustomerID,
-		Items:       req.Items,
+	order := &orders_dmodel.Order{
+		CustomerID:  template_req.CustomerID,
+		Items:       template_req.Items,
 		TotalAmount: totalAmount,
 	}
 
-	createdOrder := store.Create(order)
+	createdOrder, err := h.controller.Create_Order(ctx, order)
+	if err != nil {
+		log.Printf("Error creating order: %v", err)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(createdOrder)
 }
@@ -148,7 +242,7 @@ func (h *Handler_Orders) Update_OrderStatus(w http.ResponseWriter, r *http.Reque
 	w.Header().Set("Content-Type", "application/json")
 
 	r_params := mux.Vars(r)
-	orderID, err := strconv.Atoi(r_params["id"])
+	orderID, err := strconv.Atoi(r_params["orderId"])
 	if err != nil {
 		http.Error(w, "Invalid order ID", http.StatusBadRequest)
 		return
@@ -173,4 +267,56 @@ func (h *Handler_Orders) Update_OrderStatus(w http.ResponseWriter, r *http.Reque
 	w.WriteHeader(http.StatusNoContent)
 	// logging
 	log.Printf("Order ID %d status updated to %s", orderID, statusUpdate.Status)
+}
+
+func (h *Handler_Orders) Fulfill_Order(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	w.Header().Set("Content-Type", "application/json")
+
+	r_params := mux.Vars(r)
+	id, err := strconv.Atoi(r_params["orderId"])
+	if err != nil {
+		http.Error(w, "Invalid order ID", http.StatusBadRequest)
+		return
+	}
+
+	order, err := h.controller.Get_ByOrderID(ctx, id)
+	if err != nil {
+		if err == internal.ErrItemNotFound {
+			http.Error(w, "Order not found", http.StatusNotFound)
+		} else {
+			log.Printf("Error getting order by ID: Repository error: %v", err)
+			http.Error(w, "Internal server error", http.StatusInternalServerError)
+		}
+		return
+	}
+
+	if order.Status != "pending" {
+		http.Error(w, "Order is not in pending status", http.StatusBadRequest)
+		return
+	}
+
+	// Fulfill inventory for each item
+	for _, item := range order.Items {
+		if err := fulfillInventory(item.ProductID, item.Quantity); err != nil {
+			http.Error(w, fmt.Sprintf("Failed to fulfill inventory: %v", err), http.StatusInternalServerError)
+			return
+		}
+	}
+
+	// Update order status
+	if err := h.controller.Update_OrderStatus(ctx, id, "fulfilled"); err != nil {
+		http.Error(w, "Failed to update order status", http.StatusInternalServerError)
+		return
+	}
+
+	updatedOrder, err := h.controller.Get_ByOrderID(ctx, id)
+	if err != nil {
+		log.Printf("Error getting updated order by ID: Repository error: %v", err)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	json.NewEncoder(w).Encode(updatedOrder)
 }

@@ -1,4 +1,4 @@
-package dmodel
+package orders_dmodel
 
 import "time"
 
