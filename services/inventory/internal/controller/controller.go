@@ -2,6 +2,7 @@ package inventory_controller
 
 import (
 	"context"
+
 	dmodel "inventory-service/pkg"
 )
 

@@ -48,17 +48,23 @@ func main() {
 	r := mux.NewRouter()
 	// GET all inventory
 	r.Handle("/inventory", inventory_handler_http.AddCORSHeaders(http.HandlerFunc(handler.Get_All))).Methods(http.MethodGet)
+	// r.Handle("/inventory", inventory_handler_http.AddCORSHeaders(http.HandlerFunc(handler.Get_All))).Methods(http.MethodOptions)
 	// GET inventory by productId
 	r.Handle("/inventory/{productId}", inventory_handler_http.AddCORSHeaders(http.HandlerFunc(handler.Get_ByProductID))).Methods(http.MethodGet)
+	// r.Handle("/inventory/{productId}", inventory_handler_http.AddCORSHeaders(http.HandlerFunc(handler.Get_ByProductID))).Methods(http.MethodOptions)
 	// PUT update stock
 	r.Handle("/inventory/{productId}", inventory_handler_http.AddCORSHeaders(http.HandlerFunc(handler.Update_Stock))).Methods(http.MethodPut)
+	// r.Handle("/inventory/{productId}", inventory_handler_http.AddCORSHeaders(http.HandlerFunc(handler.Update_Stock))).Methods(http.MethodOptions)
 	// POST reserve stock
 	r.Handle("/inventory/{productId}/reserve", inventory_handler_http.AddCORSHeaders(http.HandlerFunc(handler.Reserve_Stock))).Methods(http.MethodPost)
+	// r.Handle("/inventory/{productId}/reserve", inventory_handler_http.AddCORSHeaders(http.HandlerFunc(handler.Reserve_Stock))).Methods(http.MethodOptions)
 	// POST release reservation
 	r.Handle("/inventory/{productId}/release_reservation", inventory_handler_http.AddCORSHeaders(http.HandlerFunc(handler.Release_Reservation))).Methods(http.MethodPost)
+	// r.Handle("/inventory/{productId}/release_reservation", inventory_handler_http.AddCORSHeaders(http.HandlerFunc(handler.Release_Reservation))).Methods(http.MethodOptions)
 	// POST fulfill reservation
 	r.Handle("/inventory/{productId}/fulfill", inventory_handler_http.AddCORSHeaders(http.HandlerFunc(handler.Fulfill_Reservation))).Methods(http.MethodPost)
-	// CORS preflight (OPTIONS) for all endpoints
+	// r.Handle("/inventory/{productId}/fulfill", inventory_handler_http.AddCORSHeaders(http.HandlerFunc(handler.Fulfill_Reservation))).Methods(http.MethodOptions)
+	// CORS preflight (OPTIONS) requests for all endpoints
 	r.HandleFunc("/inventory", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}).Methods(http.MethodOptions)
