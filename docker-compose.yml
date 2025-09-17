@@ -93,3 +93,4 @@ services:
 networks:
   inventory-network:
     driver: bridge
+    

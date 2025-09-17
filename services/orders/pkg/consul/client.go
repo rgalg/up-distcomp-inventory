@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/hashicorp/consul/api"
+	api "github.com/hashicorp/consul/api"
 )
 
 type Client struct {
@@ -16,8 +16,7 @@ type Client struct {
 	servicePort int
 }
 
-// NewClient creates a new Consul client
-func NewClient() (*Client, error) {
+func New() (*Client, error) {
 	consulHost := os.Getenv("CONSUL_HOST")
 	if consulHost == "" {
 		consulHost = "localhost"
@@ -53,24 +52,23 @@ func NewClient() (*Client, error) {
 	}, nil
 }
 
-// RegisterService registers the service with Consul
 func (c *Client) RegisterService() error {
-	// Get container hostname for service registration
+	// get container hostname for service registration
 	hostname, err := os.Hostname()
 	if err != nil {
 		return fmt.Errorf("failed to get hostname: %v", err)
 	}
 
 	registration := &api.AgentServiceRegistration{
-		ID:   fmt.Sprintf("%s-%s", c.serviceName, hostname),
-		Name: c.serviceName,
-		Port: c.servicePort,
-		Address: hostname, // Use container hostname for internal Docker networking
+		ID:      fmt.Sprintf("%s-%s", c.serviceName, hostname),
+		Name:    c.serviceName,
+		Port:    c.servicePort,
+		Address: hostname, // use container hostname for internal Docker networking
 		Check: &api.AgentServiceCheck{
 			HTTP:                           fmt.Sprintf("http://%s:%d/health", hostname, c.servicePort),
 			Interval:                       "10s",
 			Timeout:                        "3s",
-			DeregisterCriticalServiceAfter: "30s",
+			DeregisterCriticalServiceAfter: "60s",
 		},
 	}
 
@@ -83,7 +81,6 @@ func (c *Client) RegisterService() error {
 	return nil
 }
 
-// DeregisterService removes the service from Consul
 func (c *Client) DeregisterService() error {
 	hostname, err := os.Hostname()
 	if err != nil {
@@ -100,7 +97,6 @@ func (c *Client) DeregisterService() error {
 	return nil
 }
 
-// DiscoverService finds a healthy service instance
 func (c *Client) DiscoverService(serviceName string) (string, error) {
 	services, _, err := c.client.Health().Service(serviceName, "", true, nil)
 	if err != nil {
@@ -111,15 +107,14 @@ func (c *Client) DiscoverService(serviceName string) (string, error) {
 		return "", fmt.Errorf("no healthy instances of service %s found", serviceName)
 	}
 
-	// Return the first healthy service instance
+	// return the first healthy service instance
 	service := services[0]
 	endpoint := fmt.Sprintf("%s:%d", service.Service.Address, service.Service.Port)
-	
+
 	log.Printf("Discovered service %s at %s", serviceName, endpoint)
 	return endpoint, nil
 }
 
-// WaitForConsul waits for Consul to be available
 func (c *Client) WaitForConsul(maxRetries int) error {
 	for i := 0; i < maxRetries; i++ {
 		_, err := c.client.Status().Leader()
@@ -127,10 +122,10 @@ func (c *Client) WaitForConsul(maxRetries int) error {
 			log.Printf("Consul is available")
 			return nil
 		}
-		
+
 		log.Printf("Waiting for Consul to be available... (attempt %d/%d)", i+1, maxRetries)
 		time.Sleep(2 * time.Second)
 	}
-	
+
 	return fmt.Errorf("consul not available after %d retries", maxRetries)
 }

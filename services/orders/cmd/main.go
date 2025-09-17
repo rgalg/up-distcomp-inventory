@@ -36,27 +36,29 @@ func main() {
 	}
 	log.Printf("Orders service starting on port %d", port)
 
-	// Initialize Consul client
-	consulClient, err := consul.NewClient()
+	// initialize Consul client
+	consulClient, err := consul.New()
 	if err != nil {
 		log.Printf("Failed to create consul client: %v", err)
 		log.Printf("Continuing without service discovery...")
 		consulClient = nil
 	} else {
-		// Wait for Consul to be available
+		// wait for Consul to be available
 		err = consulClient.WaitForConsul(10)
 		if err != nil {
 			log.Printf("Consul not available: %v", err)
 			log.Printf("Continuing without service discovery...")
 			consulClient = nil
 		} else {
-			// Register service with Consul
+			// register service with Consul
 			err = consulClient.RegisterService()
 			if err != nil {
 				log.Printf("Failed to register service with Consul: %v", err)
+			} else {
+				log.Printf("Service registered with Consul successfully")
 			}
 
-			// Setup graceful shutdown to deregister service
+			// setup graceful shutdown to deregister service
 			go func() {
 				sigChan := make(chan os.Signal, 1)
 				signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
