@@ -22,6 +22,6 @@ WORKDIR /root/
 # Copy the binary from builder
 COPY --from=builder /app/main .
 
-EXPOSE 8002
+EXPOSE 8002 9002
 
 CMD ["./main"]

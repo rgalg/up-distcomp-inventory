@@ -1,51 +1,51 @@
 # Inventory Management System
 
-A microservices-based inventory management application built with Go backend services, Consul service discovery, and a simple web frontend.
+A microservices-based inventory management application built with Go backend services, gRPC inter-service communication, and Kubernetes orchestration using Kind.
 
 ## Architecture
 
-This application consists of five main components:
+This application consists of four main components:
 
 ### Backend Microservices (Go)
-1. **Products Service** (Port 8001) - Manages product catalog
-2. **Inventory Service** (Port 8002) - Tracks stock levels and reservations
-3. **Orders Service** (Port 8003) - Handles order processing
-
-### Service Discovery
-4. **Consul** (Port 8500) - Service discovery and health checking
+1. **Products Service** (HTTP: 8001, gRPC: 9001) - Manages product catalog
+2. **Inventory Service** (HTTP: 8002, gRPC: 9002) - Tracks stock levels and reservations
+3. **Orders Service** (HTTP: 8003, gRPC: 9003) - Handles order processing
 
 ### Frontend
-5. **Web Application** (Port 3000) - Simple HTML/CSS/JS interface
+4. **Web Application** (Port 3000) - Simple HTML/CSS/JS interface
 
 ## Features
 
 - **Product Management**: View and manage product catalog including product categories and descriptions
 - **Inventory Tracking**: Real-time stock levels with reservation system to avoid overserving
 - **Order Processing**: Create and fulfill orders with automatic inventory updates
-- **Service Discovery**: Consul-based service discovery for dynamic service location
-- **Health Checking**: Automatic health monitoring of all services
+- **gRPC Communication**: High-performance inter-service communication using gRPC
+- **Service Discovery**: Kubernetes-native service discovery
+- **Health Checking**: Automatic health monitoring of all services via Kubernetes probes
 - **Microservices Architecture**: Independent, containerized services
-- **RESTful APIs**: API interfaces between services
+- **Dual Protocol**: RESTful HTTP APIs for frontend and gRPC for inter-service communication
 - **Web Interface**: User-friendly frontend to create and fulfill orders
+- **Container Orchestration**: Kubernetes deployment using Kind for local development
 
 ## Quick Start
 
 ### Prerequisites
-- Docker and Docker Compose
+- Docker
+- Kind (Kubernetes in Docker) - [Installation Guide](https://kind.sigs.k8s.io/docs/user/quick-start/#installation)
+- kubectl - [Installation Guide](https://kubernetes.io/docs/tasks/tools/)
 - Git
 
 ### Running the Application
 
-Hiram doesn't need this, but it can't hurt I guess:
 1. Clone the repository:
 ```bash
 git clone <repository-url>
 cd up-distcomp-inventory
 ```
 
-2. Start all services with Docker Compose:
+2. Deploy to Kind cluster (this will create the cluster, build images, and deploy):
 ```bash
-docker-compose up --build
+./deploy-kind.sh
 ```
 
 3. Access the application:
@@ -53,7 +53,28 @@ docker-compose up --build
 - **Products API**: http://localhost:8001
 - **Inventory API**: http://localhost:8002
 - **Orders API**: http://localhost:8003
-- **Consul UI**: http://localhost:8500 (Service discovery dashboard)
+
+### Managing the Deployment
+
+Check pod status:
+```bash
+kubectl get pods -n inventory-system
+```
+
+View service logs:
+```bash
+kubectl logs -n inventory-system <pod-name>
+```
+
+Access a pod shell:
+```bash
+kubectl exec -it -n inventory-system <pod-name> -- sh
+```
+
+Delete the cluster:
+```bash
+kind delete cluster --name inventory-cluster
+```
 
 ## API Documentation
 
@@ -176,36 +197,34 @@ cd ../orders && go build -o orders .
 
 ## Service Communication & Discovery
 
-- **Service Discovery**: Consul-based service discovery automatically locates service instances
-- **Health Monitoring**: Consul health checks ensure only healthy services are discovered
-- **Fallback Support**: Services gracefully fallback to environment variables if Consul is unavailable
-- Orders service communicates with Products service to validate products and get pricing
-- Orders service communicates with Inventory service to reserve and fulfill stock
+- **Service Discovery**: Kubernetes-native service discovery via DNS
+- **Health Monitoring**: Kubernetes liveness and readiness probes
+- **gRPC Communication**: Orders service uses gRPC to communicate with Products and Inventory services
+- **HTTP APIs**: Frontend communicates with services via RESTful HTTP APIs
+- Orders service communicates with Products service to validate products and get pricing (via gRPC)
+- Orders service communicates with Inventory service to reserve and fulfill stock (via gRPC)
 - All services expose health check endpoints at `/health`
-- Services use Docker networking for internal communication
+- Services use Kubernetes ClusterIP services for internal communication
 
-### Consul Integration
+### gRPC Integration
 
-Each service:
-1. Registers itself with Consul on startup
-2. Uses Consul to discover other services dynamically  
-3. Implements health checks for monitoring
-4. Gracefully deregisters on shutdown
+Inter-service communication:
+1. Each service exposes both HTTP and gRPC endpoints
+2. HTTP endpoints (8001-8003) for frontend communication
+3. gRPC endpoints (9001-9003) for inter-service communication
+4. Orders service uses gRPC clients to call Products and Inventory services
+5. Service discovery is handled by Kubernetes DNS (e.g., `products-service:9001`)
 
-Service discovery flow:
-1. Orders service needs to call Products/Inventory services
-2. Queries Consul for healthy service instances
-3. Uses discovered endpoint for HTTP calls
-4. Falls back to environment variables if Consul unavailable
+### Kubernetes Configuration
 
-## Service Discovery Configuration
+Services are configured via Kubernetes manifests with environment variables:
 
-Services can be configured with environment variables specified in the docker-compose.yml file:
-
-- `CONSUL_HOST`: Consul server hostname (default: localhost)
-- `SERVICE_NAME`: Name to register in Consul
-- `SERVICE_PORT`: Port number for service registration
-- `PORT`: Port the service listens on
+- `PORT`: HTTP port the service listens on (8001-8003)
+- `GRPC_PORT`: gRPC port the service listens on (9001-9003)
+- `PRODUCTS_GRPC_ADDR`: Products service gRPC address for Orders service
+- `INVENTORY_GRPC_ADDR`: Inventory service gRPC address for Orders service
+- `PRODUCTS_HOST`: Products service HTTP address for Orders service
+- `INVENTORY_HOST`: Inventory service HTTP address for Orders service
 
 ## Sample Data
 
@@ -224,17 +243,22 @@ The application starts with sample data:
 
 ## Technology Stack
 
-- **Backend**: Go 1.21+ with Gorilla Mux router
-- **Service Discovery**: HashiCorp Consul
+- **Backend**: Go 1.21+ with Gorilla Mux router for HTTP and gRPC
+- **Inter-service Communication**: gRPC with Protocol Buffers
+- **Service Discovery**: Kubernetes DNS
+- **Orchestration**: Kubernetes (Kind for local development)
 - **Frontend**: HTML5, CSS3, Vanilla JavaScript
-- **Containerization**: Docker & Docker Compose
-- **Networking**: Docker bridge networking
-- **Data Storage**: Volatile for now
+- **Containerization**: Docker
+- **Networking**: Kubernetes ClusterIP and NodePort services
+- **Data Storage**: In-memory (volatile)
 
 ## Architecture Benefits
 
-- **Scalability**: Each service can be scaled independently
+- **Scalability**: Each service can be scaled independently via Kubernetes
 - **Maintainability**: Clear separation of concerns
 - **Reliability**: Service isolation prevents cascade failures
-- **Service Discovery**: Dynamic service location with health monitoring
+- **Performance**: gRPC provides high-performance inter-service communication
+- **Service Discovery**: Kubernetes-native DNS-based service discovery
+- **Cloud Native**: Designed for Kubernetes deployment
 - **Flexibility**: Easy to modify or replace individual services
+- **Production Ready**: Can be deployed to any Kubernetes cluster (GKE, EKS, AKS, etc.)

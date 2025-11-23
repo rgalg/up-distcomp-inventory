@@ -39,3 +39,4 @@ Thumbs.db
 services/*/products-service
 services/*/inventory-service
 services/*/orders-service
+*.backup

@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
@@ -13,9 +14,10 @@ import (
 	inventory_handler_http "inventory-service/internal/handler"
 	inventory_repository "inventory-service/internal/repository"
 
-	consul "inventory-service/pkg/consul"
+	pb "inventory-service/proto/inventory"
 
 	"github.com/gorilla/mux"
+	"google.golang.org/grpc"
 )
 
 func main() {
@@ -23,9 +25,11 @@ func main() {
 	//var ctx context.Context
 
 	var port int
+	var grpcPort int
 	var datarepo *inventory_repository.DataRepo_Inventory
 	var controller *inventory_controller.Controller_Inventory
 	var handler *inventory_handler_http.Handler_Inventory
+	var grpcHandler *inventory_handler_http.Handler_Inventory_GRPC
 
 	// -------------------------------------------------------------------
 	// variable initialization
@@ -35,43 +39,18 @@ func main() {
 	if err != nil {
 		port = 8002
 	}
-	log.Printf("Inventory service starting on port %d", port)
+	log.Printf("Inventory service starting on HTTP port %d", port)
 
-	// initialize Consul client
-	consulClient, err := consul.New()
+	// getting the gRPC port from environment variable or defaulting to 9002
+	grpcPort, err = strconv.Atoi(os.Getenv("GRPC_PORT"))
 	if err != nil {
-		log.Printf("Failed to create consul client: %v", err)
-		log.Printf("Continuing without service discovery...")
-		consulClient = nil
-	} else {
-		// wait for Consul to be available
-		err = consulClient.WaitForConsul(10)
-		if err != nil {
-			log.Printf("Consul not available: %v", err)
-			log.Printf("Continuing without service discovery...")
-			consulClient = nil
-		} else {
-			// register service with Consul
-			err = consulClient.RegisterService()
-			if err != nil {
-				log.Printf("Failed to register service with Consul: %v", err)
-			} else {
-				log.Printf("Service registered with Consul successfully")
-			}
-
-			// setup graceful shutdown to deregister service
-			go func() {
-				sigChan := make(chan os.Signal, 1)
-				signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
-				<-sigChan
-				log.Println("Received shutdown signal, deregistering service...")
-				if consulClient != nil {
-					consulClient.DeregisterService()
-				}
-				os.Exit(0)
-			}()
-		}
+		grpcPort = 9002
 	}
+	log.Printf("Inventory service starting on gRPC port %d", grpcPort)
+
+	// setup graceful shutdown
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 
 	// initializing context
 	//ctx = context.Background()
@@ -81,6 +60,8 @@ func main() {
 	controller = inventory_controller.New(datarepo)
 	// handler
 	handler = inventory_handler_http.New(controller)
+	// gRPC handler
+	grpcHandler = inventory_handler_http.NewGRPC(controller)
 	// -------------------------------------------------------------------
 
 	// -------------------------------------------------------------------
@@ -113,11 +94,46 @@ func main() {
 	// -------------------------------------------------------------------
 
 	// -------------------------------------------------------------------
-	// exposing the service
+	// Start gRPC server
 	// -------------------------------------------------------------------
-	err = http.ListenAndServe(fmt.Sprintf(":%d", port), r)
+	grpcServer := grpc.NewServer()
+	pb.RegisterInventoryServiceServer(grpcServer, grpcHandler)
+
+	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", grpcPort))
 	if err != nil {
-		panic(err)
+		log.Fatalf("Failed to listen on gRPC port: %v", err)
 	}
+
+	go func() {
+		log.Printf("gRPC server listening on port %d", grpcPort)
+		if err := grpcServer.Serve(lis); err != nil {
+			log.Fatalf("Failed to serve gRPC: %v", err)
+		}
+	}()
+	// -------------------------------------------------------------------
+
+	// -------------------------------------------------------------------
+	// Start HTTP server
+	// -------------------------------------------------------------------
+	httpServer := &http.Server{
+		Addr:    fmt.Sprintf(":%d", port),
+		Handler: r,
+	}
+
+	go func() {
+		log.Printf("HTTP server listening on port %d", port)
+		if err := httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatalf("Failed to serve HTTP: %v", err)
+		}
+	}()
+	// -------------------------------------------------------------------
+
+	// -------------------------------------------------------------------
+	// Wait for shutdown signal
+	// -------------------------------------------------------------------
+	<-sigChan
+	log.Println("Received shutdown signal, shutting down gracefully...")
+	grpcServer.GracefulStop()
+	log.Println("Servers stopped")
 	// -------------------------------------------------------------------
 }
