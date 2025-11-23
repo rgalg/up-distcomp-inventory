@@ -15,29 +15,13 @@ import (
 	orders_controller "orders-service/internal/controller"
 	orders_dmodel "orders-service/pkg"
 	products_dmodel "orders-service/pkg/products"
-	consul "orders-service/pkg/consul"
 )
 
 func (h *Handler_Orders) getProduct(productID int) (*products_dmodel.Product, error) {
-	var host string
-	var err error
-
-	// Try to discover service via Consul first
-	if h.consulClient != nil {
-		host, err = h.consulClient.DiscoverService("products")
-		if err != nil {
-			log.Printf("Failed to discover products service via Consul: %v", err)
-		}
-	}
-
-	// Fallback to environment variable or localhost
+	// Use Kubernetes service discovery (environment variable or default)
+	host := os.Getenv("PRODUCTS_HOST")
 	if host == "" {
-		envHost := os.Getenv("PRODUCTS_HOST")
-		if envHost == "" {
-			host = "localhost:8001"
-		} else {
-			host = fmt.Sprintf("%s:8001", envHost)
-		}
+		host = "products-service:8001"
 	}
 
 	resp, err := http.Get(fmt.Sprintf("http://%s/products/%d", host, productID))
@@ -59,25 +43,10 @@ func (h *Handler_Orders) getProduct(productID int) (*products_dmodel.Product, er
 }
 
 func (h *Handler_Orders) reserveInventory(productID, quantity int) error {
-	var host string
-	var err error
-
-	// Try to discover service via Consul first
-	if h.consulClient != nil {
-		host, err = h.consulClient.DiscoverService("inventory")
-		if err != nil {
-			log.Printf("Failed to discover inventory service via Consul: %v", err)
-		}
-	}
-
-	// Fallback to environment variable or localhost
+	// Use Kubernetes service discovery (environment variable or default)
+	host := os.Getenv("INVENTORY_HOST")
 	if host == "" {
-		envHost := os.Getenv("INVENTORY_HOST")
-		if envHost == "" {
-			host = "localhost:8002"
-		} else {
-			host = fmt.Sprintf("%s:8002", envHost)
-		}
+		host = "inventory-service:8002"
 	}
 
 	reqBody, _ := json.Marshal(map[string]int{"stock": quantity})
@@ -108,25 +77,10 @@ func (h *Handler_Orders) reserveInventory(productID, quantity int) error {
 }
 
 func (h *Handler_Orders) fulfillInventory(productID, quantity int) error {
-	var host string
-	var err error
-
-	// Try to discover service via Consul first
-	if h.consulClient != nil {
-		host, err = h.consulClient.DiscoverService("inventory")
-		if err != nil {
-			log.Printf("Failed to discover inventory service via Consul: %v", err)
-		}
-	}
-
-	// Fallback to environment variable or localhost
+	// Use Kubernetes service discovery (environment variable or default)
+	host := os.Getenv("INVENTORY_HOST")
 	if host == "" {
-		envHost := os.Getenv("INVENTORY_HOST")
-		if envHost == "" {
-			host = "localhost:8002"
-		} else {
-			host = fmt.Sprintf("%s:8002", envHost)
-		}
+		host = "inventory-service:8002"
 	}
 
 	reqBody, _ := json.Marshal(map[string]int{"stock": quantity})
@@ -165,14 +119,12 @@ func AddCORSHeaders(next http.Handler) http.Handler {
 }
 
 type Handler_Orders struct {
-	controller   *orders_controller.Controller_Orders
-	consulClient *consul.Client
+	controller *orders_controller.Controller_Orders
 }
 
-func New(controller *orders_controller.Controller_Orders, consulClient *consul.Client) *Handler_Orders {
+func New(controller *orders_controller.Controller_Orders, _ interface{}) *Handler_Orders {
 	return &Handler_Orders{
-		controller:   controller,
-		consulClient: consulClient,
+		controller: controller,
 	}
 }
 

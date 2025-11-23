@@ -1,0 +1,69 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: orders-service
+  namespace: inventory-system
+  labels:
+    app: orders-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: orders-service
+  template:
+    metadata:
+      labels:
+        app: orders-service
+    spec:
+      containers:
+      - name: orders-service
+        image: orders-service:latest
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 8003
+          name: http
+        - containerPort: 9003
+          name: grpc
+        env:
+        - name: PORT
+          value: "8003"
+        - name: GRPC_PORT
+          value: "9003"
+        - name: PRODUCTS_GRPC_ADDR
+          value: "products-service:9001"
+        - name: INVENTORY_GRPC_ADDR
+          value: "inventory-service:9002"
+        - name: PRODUCTS_HOST
+          value: "products-service:8001"
+        - name: INVENTORY_HOST
+          value: "inventory-service:8002"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8003
+          initialDelaySeconds: 10
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8003
+          initialDelaySeconds: 5
+          periodSeconds: 5
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: orders-service
+  namespace: inventory-system
+spec:
+  selector:
+    app: orders-service
+  ports:
+  - name: http
+    port: 8003
+    targetPort: 8003
+    nodePort: 30003
+  - name: grpc
+    port: 9003
+    targetPort: 9003
+  type: NodePort
