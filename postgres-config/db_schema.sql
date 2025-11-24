@@ -38,13 +38,15 @@ INSERT INTO products (name, description, price, category) VALUES
     ('Mouse', 'Wireless optical mouse', 29.99, 'Electronics'),
     ('Keyboard', 'Mechanical keyboard', 79.99, 'Electronics'),
     ('Monitor', '24-inch LCD monitor', 199.99, 'Electronics'),
-    ('Desk Chair', 'Ergonomic office chair', 149.99, 'Furniture');
+    ('Desk Chair', 'Ergonomic office chair', 149.99, 'Furniture')
+ON CONFLICT (id) DO NOTHING;
+    
 -- initial inventory
 INSERT INTO inventory (product_id, stock, reserved) VALUES
     (1, 50, 0),
     (2, 100, 0),
     (3, 25, 0),
     (4, 30, 0),
-    (5, 15, 0);
-ON CONFLICT DO NOTHING;
+    (5, 15, 0)
+ON CONFLICT (product_id) DO NOTHING;
 -- ** no initial orders

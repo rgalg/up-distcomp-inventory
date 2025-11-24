@@ -1,0 +1,22 @@
+# This file is auto-generated from .env - DO NOT EDIT MANUALLY
+# Run k8s/generate-postgres-config.sh to regenerate
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-config
+  namespace: inventory-system
+data:
+  DB_HOST: "postgres"
+  DB_PORT: "5432"
+  DB_NAME: "your_db_name"
+  DB_USER: "your_db_user"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: postgres-secret
+  namespace: inventory-system
+type: Opaque
+stringData:
+  DB_PASSWORD: "your_password_here"
+  

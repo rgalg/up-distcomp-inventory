@@ -43,8 +43,10 @@ services/*/orders-service
 
 # ignore .env files
 .env
-# keep .env templates
-!*.env.template
 
-# Ignore generated Kubernetes config with secrets
+# ignore generated Kubernetes config with secrets
 k8s/postgres-config-generated.yaml
+
+# keep templates
+!*.template
+
