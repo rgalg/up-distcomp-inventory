@@ -1,8 +1,8 @@
 // API endpoints - In production, these would be environment variables
-const API_BASE = window.location.hostname === 'localhost' ? 'http://localhost' : 'http://localhost';
-const PRODUCTS_API = `${API_BASE}:8001`;
-const INVENTORY_API = `${API_BASE}:8002`;
-const ORDERS_API = `${API_BASE}:8003`;
+const API_BASE = '';    // empty because frontend is served from the same origin using a reverse proxy
+const PRODUCTS_API = `${API_BASE}/api/products`;
+const INVENTORY_API = `${API_BASE}/api/inventory`;
+const ORDERS_API = `${API_BASE}/api/orders`;
 
 // Global state
 let products = [];
