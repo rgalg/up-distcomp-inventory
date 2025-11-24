@@ -40,3 +40,8 @@ services/*/products-service
 services/*/inventory-service
 services/*/orders-service
 *.backup
+
+# ignore .env files
+.env
+# keep .env templates
+!*.env.template

@@ -43,12 +43,23 @@ git clone <repository-url>
 cd up-distcomp-inventory
 ```
 
-2. Deploy to Kind cluster (this will create the cluster, build images, and deploy):
+2. Configure your own environment variables
+```bash
+cp .env.template .env
+# you should modify the default values here
+```
+
+3. Create and configure the PostgreSQL DB and user for the application
+```bash
+./postgres-config/steup_pgsql_db.sh
+```
+
+4. Deploy to Kind cluster (this will create the cluster, build images, and deploy):
 ```bash
 ./deploy-kind.sh
 ```
 
-3. Access the application:
+5. Access the application:
 - **Web Interface**: http://localhost:3000
 - **Products API**: http://localhost:8001
 - **Inventory API**: http://localhost:8002
