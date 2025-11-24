@@ -60,10 +60,13 @@ cp .env.template .env
 ```
 
 5. Access the application:
-- **Web Interface**: http://localhost:3000
-- **Products API**: http://localhost:8001
-- **Inventory API**: http://localhost:8002
-- **Orders API**: http://localhost:8003
+- **Web Interface**: http://localhost:3000 (via LoadBalancer)
+
+**Note**: Backend services (Products, Inventory, Orders) use ClusterIP and are only accessible within the cluster for internal communication. Access them through the frontend web interface or use kubectl port-forward for debugging:
+```bash
+# Example: Forward Products API for debugging
+kubectl port-forward -n inventory-system svc/products-service 8001:8001
+```
 
 ### Managing the Deployment
 
@@ -210,12 +213,13 @@ cd ../orders && go build -o orders .
 
 - **Service Discovery**: Kubernetes-native service discovery via DNS
 - **Health Monitoring**: Kubernetes liveness and readiness probes
-- **gRPC Communication**: Orders service uses gRPC to communicate with Products and Inventory services
-- **HTTP APIs**: Frontend communicates with services via RESTful HTTP APIs
+- **gRPC Communication**: Orders service uses gRPC to communicate with Products and Inventory services (ports 9001-9003)
+- **HTTP APIs**: Frontend communicates with services via RESTful HTTP APIs (ports 8001-8003)
 - Orders service communicates with Products service to validate products and get pricing (via gRPC)
 - Orders service communicates with Inventory service to reserve and fulfill stock (via gRPC)
 - All services expose health check endpoints at `/health`
-- Services use Kubernetes ClusterIP services for internal communication
+- Backend services and database use Kubernetes ClusterIP services for internal communication
+- Frontend service uses LoadBalancer type for external access
 
 ### gRPC Integration
 
@@ -236,6 +240,31 @@ Services are configured via Kubernetes manifests with environment variables:
 - `INVENTORY_GRPC_ADDR`: Inventory service gRPC address for Orders service
 - `PRODUCTS_HOST`: Products service HTTP address for Orders service
 - `INVENTORY_HOST`: Inventory service HTTP address for Orders service
+
+#### Service Types
+
+The application follows Kubernetes best practices for service exposure:
+
+- **Frontend Service**: LoadBalancer type - Exposed externally for user access
+- **Backend Services** (Products, Inventory, Orders): ClusterIP type - Internal communication only
+- **Database** (PostgreSQL): ClusterIP type - Internal communication only
+
+#### Horizontal Pod Autoscaling
+
+The backend services (Products, Inventory, Orders) are configured with Horizontal Pod Autoscalers (HPA):
+
+- **Minimum Replicas**: 1
+- **Maximum Replicas**: 5
+- **Target CPU Utilization**: 70%
+- **Scale Up Behavior**: Can double pods every 30 seconds when needed
+- **Scale Down Behavior**: Gradually reduces pods by 50% every 30 seconds with 60s stabilization window
+
+To view HPA status:
+```bash
+kubectl get hpa -n inventory-system
+```
+
+To test autoscaling, generate load on the services using tools like Locust or K6.
 
 ## Sample Data
 
@@ -260,8 +289,9 @@ The application starts with sample data:
 - **Orchestration**: Kubernetes (Kind for local development)
 - **Frontend**: HTML5, CSS3, Vanilla JavaScript
 - **Containerization**: Docker
-- **Networking**: Kubernetes ClusterIP and NodePort services
-- **Data Storage**: In-memory (volatile)
+- **Networking**: Kubernetes ClusterIP services (internal) and LoadBalancer (frontend)
+- **Auto-scaling**: Horizontal Pod Autoscaler (HPA) for backend services
+- **Data Storage**: PostgreSQL database with persistent storage
 
 ## Architecture Benefits
 

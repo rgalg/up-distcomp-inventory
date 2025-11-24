@@ -186,6 +186,10 @@ kubectl wait --for=condition=available --timeout=180s deployment/inventory-servi
 kubectl wait --for=condition=available --timeout=180s deployment/orders-service -n inventory-system
 kubectl wait --for=condition=available --timeout=180s deployment/frontend -n inventory-system
 
+# deploy Horizontal Pod Autoscalers
+printf "Deploying Horizontal Pod Autoscalers...\n"
+kubectl apply -f k8s/hpa.yaml
+
 printf "======================================\n\n"
 
 # ------------------------------------------
@@ -198,10 +202,13 @@ printf "===========================================\n"
 
 printf "\n"
 printf "Access the application at:\n"
-printf "  Frontend: http://localhost:3000\n"
-printf "  Products API: http://localhost:8001\n"
-printf "  Inventory API: http://localhost:8002\n"
-printf "  Orders API: http://localhost:8003\n"
+printf "  Frontend: http://localhost:3000 (via LoadBalancer)\n"
+printf "\n"
+printf "Backend services use ClusterIP and are only accessible within the cluster.\n"
+printf "Use 'kubectl port-forward' for debugging backend services:\n"
+printf "  kubectl port-forward -n inventory-system svc/products-service 8001:8001\n"
+printf "  kubectl port-forward -n inventory-system svc/inventory-service 8002:8002\n"
+printf "  kubectl port-forward -n inventory-system svc/orders-service 8003:8003\n"
 printf "\n"
 printf "To check status: kubectl get pods -n inventory-system\n"
 printf "To view logs: kubectl logs -n inventory-system <pod-name>\n"

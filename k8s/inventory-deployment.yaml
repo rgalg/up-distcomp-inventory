@@ -24,6 +24,13 @@ spec:
           name: http
         - containerPort: 9002
           name: grpc
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
         env:
         - name: PORT
           value: "8002"
@@ -79,8 +86,7 @@ spec:
   - name: http
     port: 8002
     targetPort: 8002
-    nodePort: 30002
   - name: grpc
     port: 9002
     targetPort: 9002
-  type: NodePort
+  type: ClusterIP
