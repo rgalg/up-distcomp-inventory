@@ -50,3 +50,24 @@ k8s/postgres-config-generated.yaml
 # keep templates
 !*.template
 
+# k6 load test compiled output and reports
+load-tests/reports/
+load-tests/results/
+load-tests/scripts/*.html
+load-tests/scripts/*.json
+load-tests/scripts/*.csv
+load-tests/scripts/*.xml
+load-tests/scripts/*.jtl
+load-tests/scripts/*.log
+load-tests/scripts/*.out
+load-tests/scripts/*.png
+load-tests/scripts/*.svg
+load-tests/scripts/*.md
+load-tests/scripts/*.tmp
+load-tests/scripts/*.temp
+load-tests/scripts/*.ts
+
+# ignore directories of grafana dashboards created when using k6 with grafana through the docker-compose setup
+load-tests/grafana*/
+
+
