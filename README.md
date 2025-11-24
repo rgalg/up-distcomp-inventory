@@ -46,15 +46,10 @@ cd up-distcomp-inventory
 2. Configure your own environment variables
 ```bash
 cp .env.template .env
-# you should modify the default values here
+# you should modify the default values in the new .env file
 ```
 
-3. Create and configure the PostgreSQL DB and user for the application
-```bash
-./postgres-config/steup_pgsql_db.sh
-```
-
-4. Deploy to Kind cluster (this will create the cluster, build images, and deploy):
+3. Create configurations and deploy everything to a Kind cluster (this will execute a script to create a .yaml based on the .sql DB schema, create the cluster, build images, deploy and configure a PostgreSQL service, and deploy both the frontend and backend services into the Kind cluster):
 ```bash
 ./deploy-kind.sh
 ```
@@ -283,7 +278,7 @@ The application starts with sample data:
 
 ## Technology Stack
 
-- **Backend**: Go 1.21+ with Gorilla Mux router for HTTP and gRPC
+- **Backend**: Go 1.25+ with Gorilla Mux router for HTTP and gRPC
 - **Inter-service Communication**: gRPC with Protocol Buffers
 - **Service Discovery**: Kubernetes DNS
 - **Orchestration**: Kubernetes (Kind for local development)
