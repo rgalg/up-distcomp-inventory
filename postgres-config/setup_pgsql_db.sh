@@ -83,4 +83,5 @@ PGPASSWORD="$DB_PASSWORD" psql -h $DB_HOST -p $DB_PORT -U $DB_USER -d $DB_NAME -
 echo ""
 echo "================================"
 echo "====   DB setup completed   ===="
+echo "====    I hope it worked    ===="
 echo "================================"

@@ -2,9 +2,9 @@ package products_repository
 
 import (
 	"context"
+	"database/sql"
 	"products-service/internal"
 	dmodel "products-service/pkg"
-	"sync"
 )
 
 // -------------------------------------------------------------------
@@ -12,36 +12,14 @@ import (
 // -------------------------------------------------------------------
 
 // DataRepo_Products
-// holds volatile data and mutex for concurrency
+// data is in the DB now
 type DataRepo_Products struct {
-	mu     sync.RWMutex
-	items  map[int]*dmodel.Product
-	nextID int
+	db *sql.DB
 }
 
-func New() *DataRepo_Products {
-	datarepo := &DataRepo_Products{
-		items:  make(map[int]*dmodel.Product),
-		nextID: 1,
-	}
-	datarepo.addSampleProducts()
-	return datarepo
-}
-
-// adding some sample products
-func (dr *DataRepo_Products) addSampleProducts() {
-	sampleProducts := []*dmodel.Product{
-		{Name: "Laptop", Description: "High-performance laptop", Price: 999.99, Category: "Electronics"},
-		{Name: "Mouse", Description: "Wireless optical mouse", Price: 29.99, Category: "Electronics"},
-		{Name: "Keyboard", Description: "Mechanical keyboard", Price: 79.99, Category: "Electronics"},
-		{Name: "Monitor", Description: "24-inch LCD monitor", Price: 199.99, Category: "Electronics"},
-		{Name: "Desk Chair", Description: "Ergonomic office chair", Price: 149.99, Category: "Furniture"},
-	}
-
-	for _, product := range sampleProducts {
-		product.ID = dr.nextID
-		dr.items[dr.nextID] = product
-		dr.nextID++
+func New(db *sql.DB) *DataRepo_Products {
+	return &DataRepo_Products{
+		db: db,
 	}
 }
 
@@ -52,38 +30,50 @@ func (dr *DataRepo_Products) addSampleProducts() {
 // -------------------------------------------------------------------
 
 // retrieving all items
-func (dr *DataRepo_Products) Get_All(_ context.Context) ([]*dmodel.Product, error) {
-	dr.mu.RLock()
-	defer dr.mu.RUnlock()
+func (dr *DataRepo_Products) Get_All(ctx context.Context) ([]*dmodel.Product, error) {
+	query := `SELECT id, name, description, price, category FROM products`
+	rows, err := dr.db.QueryContext(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
 
-	products := make([]*dmodel.Product, 0, len(dr.items))
-	for _, product := range dr.items {
-		products = append(products, product)
+	var products []*dmodel.Product
+	for rows.Next() {
+		var p dmodel.Product
+		if err := rows.Scan(&p.ID, &p.Name, &p.Description, &p.Price, &p.Category); err != nil {
+			return nil, err
+		}
+		products = append(products, &p)
 	}
 
-	return products, nil
+	return products, rows.Err()
 }
 
 // retrieving item by ID
-func (dr *DataRepo_Products) Get_ByProductID(_ context.Context, id int) (*dmodel.Product, error) {
-	dr.mu.RLock()
-	defer dr.mu.RUnlock()
+func (dr *DataRepo_Products) Get_ByProductID(ctx context.Context, id int) (*dmodel.Product, error) {
+	query := `SELECT id, name, description, price, category FROM products WHERE id = $1`
+	var p dmodel.Product
 
-	item, exists := dr.items[id]
-	if !exists {
+	err := dr.db.QueryRowContext(ctx, query, id).Scan(&p.ID, &p.Name, &p.Description, &p.Price, &p.Category)
+	if err == sql.ErrNoRows {
 		return nil, internal.ErrItemNotFound
 	}
-	return item, nil
+	if err != nil {
+		return nil, err
+	}
+
+	return &p, nil
 }
 
 // creating a new product
-func (dr *DataRepo_Products) Create_Product(_ context.Context, product *dmodel.Product) (*dmodel.Product, error) {
-	dr.mu.Lock()
-	defer dr.mu.Unlock()
+func (dr *DataRepo_Products) Create_Product(ctx context.Context, product *dmodel.Product) (*dmodel.Product, error) {
+	query := `INSERT INTO products (name, description, price, category) VALUES ($1, $2, $3, $4) RETURNING id`
 
-	product.ID = dr.nextID
-	dr.items[dr.nextID] = product
-	dr.nextID++
+	err := dr.db.QueryRowContext(ctx, query, product.Name, product.Description, product.Price, product.Category).Scan(&product.ID)
+	if err != nil {
+		return nil, err
+	}
 
 	return product, nil
 }

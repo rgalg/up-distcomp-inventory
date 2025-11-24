@@ -2,9 +2,8 @@ package inventory_repository
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
-	"sync"
-
 	internal "inventory-service/internal"
 	dmodel "inventory-service/pkg"
 )
@@ -16,31 +15,13 @@ import (
 // DataRepo_Inventory
 // holds volatile data and a mutex for concurrency
 type DataRepo_Inventory struct {
-	mu    sync.RWMutex
-	items map[int]*dmodel.InventoryItem
+	db *sql.DB
 }
 
 // create a new object with mock data
-func New() *DataRepo_Inventory {
-	datarepo := &DataRepo_Inventory{
-		items: make(map[int]*dmodel.InventoryItem),
-	}
-	datarepo.addSampleInventory()
-	return datarepo
-}
-
-// adding some sample inventory items
-func (dr *DataRepo_Inventory) addSampleInventory() {
-	sampleItems := []*dmodel.InventoryItem{
-		{ProductID: 1, Stock: 50, Reserved: 0},
-		{ProductID: 2, Stock: 100, Reserved: 0},
-		{ProductID: 3, Stock: 25, Reserved: 0},
-		{ProductID: 4, Stock: 30, Reserved: 0},
-		{ProductID: 5, Stock: 15, Reserved: 0},
-	}
-
-	for _, item := range sampleItems {
-		dr.items[item.ProductID] = item
+func New(db *sql.DB) *DataRepo_Inventory {
+	return &DataRepo_Inventory{
+		db: db,
 	}
 }
 
@@ -51,102 +32,155 @@ func (dr *DataRepo_Inventory) addSampleInventory() {
 // -------------------------------------------------------------------
 
 // retrieving all items
-func (dr *DataRepo_Inventory) Get_All(_ context.Context) ([]*dmodel.InventoryItem, error) {
-	dr.mu.RLock()
-	defer dr.mu.RUnlock()
+func (dr *DataRepo_Inventory) Get_All(ctx context.Context) ([]*dmodel.InventoryItem, error) {
+	query := `SELECT product_id, stock, reserved FROM inventory`
+	rows, err := dr.db.QueryContext(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
 
-	items := make([]*dmodel.InventoryItem, 0, len(dr.items))
-	for _, item := range dr.items {
-		items = append(items, item)
+	var items []*dmodel.InventoryItem
+	for rows.Next() {
+		var item dmodel.InventoryItem
+		if err := rows.Scan(&item.ProductID, &item.Stock, &item.Reserved); err != nil {
+			return nil, err
+		}
+		items = append(items, &item)
 	}
 
-	return items, nil
+	return items, rows.Err()
 }
 
 // retrieving item by product ID
-func (dr *DataRepo_Inventory) Get_ByProductID(_ context.Context, productID int) (*dmodel.InventoryItem, error) {
-	dr.mu.RLock()
-	defer dr.mu.RUnlock()
+func (dr *DataRepo_Inventory) Get_ByProductID(ctx context.Context, productID int) (*dmodel.InventoryItem, error) {
+	query := `SELECT product_id, stock, reserved FROM inventory WHERE product_id = $1`
+	var item dmodel.InventoryItem
 
-	item, exists := dr.items[productID]
-	if !exists {
+	err := dr.db.QueryRowContext(ctx, query, productID).Scan(&item.ProductID, &item.Stock, &item.Reserved)
+	if err == sql.ErrNoRows {
 		return nil, internal.ErrItemNotFound
 	}
+	if err != nil {
+		return nil, err
+	}
 
-	return item, nil
+	return &item, nil
 }
 
 // -------------------------------------------------------------------
 
 // update the stock property of an inventory item
-func (dr *DataRepo_Inventory) Update_Stock(_ context.Context, productID, stock int) error {
-	dr.mu.Lock()
-	defer dr.mu.Unlock()
+func (dr *DataRepo_Inventory) Update_Stock(ctx context.Context, productID, stock int) error {
+	query := `UPDATE inventory SET stock = $1, updated_at = CURRENT_TIMESTAMP WHERE product_id = $2`
+	result, err := dr.db.ExecContext(ctx, query, stock, productID)
+	if err != nil {
+		return err
+	}
 
-	item, exists := dr.items[productID]
-
-	if !exists {
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rows == 0 {
 		return internal.ErrItemNotFound
 	}
 
-	item.Stock = stock
 	return nil
 }
 
 // increase the reserved property of an item
-func (dr *DataRepo_Inventory) Reserve_Stock(_ context.Context, productID, amount_reserved int) error {
-	dr.mu.Lock()
-	defer dr.mu.Unlock()
+func (dr *DataRepo_Inventory) Reserve_Stock(ctx context.Context, productID, amount_reserved int) error {
+	tx, err := dr.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
 
-	item, exists := dr.items[productID]
-
-	if !exists {
+	var stock, reserved int
+	query := `SELECT stock, reserved FROM inventory WHERE product_id = $1 FOR UPDATE`
+	err = tx.QueryRowContext(ctx, query, productID).Scan(&stock, &reserved)
+	if err == sql.ErrNoRows {
 		return internal.ErrItemNotFound
 	}
-	if (item.Stock - item.Reserved) < amount_reserved {
+	if err != nil {
+		return err
+	}
+
+	if (stock - reserved) < amount_reserved {
 		return internal.ErrInsufficientStock
 	}
 
-	item.Reserved += amount_reserved
-	return nil
+	updateQuery := `UPDATE inventory SET reserved = reserved + $1, updated_at = CURRENT_TIMESTAMP WHERE product_id = $2`
+	_, err = tx.ExecContext(ctx, updateQuery, amount_reserved, productID)
+	if err != nil {
+		return err
+	}
+
+	return tx.Commit()
 }
 
 // decrease the reserved property of an item
-func (dr *DataRepo_Inventory) Release_Reservation(_ context.Context, productID, amount_released int) error {
-	dr.mu.Lock()
-	defer dr.mu.Unlock()
+func (dr *DataRepo_Inventory) Release_Reservation(ctx context.Context, productID, amount_released int) error {
+	tx, err := dr.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
 
-	item, exists := dr.items[productID]
-	if !exists {
+	var reserved int
+	query := `SELECT reserved FROM inventory WHERE product_id = $1 FOR UPDATE`
+	err = tx.QueryRowContext(ctx, query, productID).Scan(&reserved)
+	if err == sql.ErrNoRows {
 		return internal.ErrItemNotFound
 	}
+	if err != nil {
+		return err
+	}
 
-	if item.Reserved < amount_released {
+	if reserved < amount_released {
 		return internal.ErrInsufficientReserved
 	}
 
-	item.Reserved -= amount_released
-	return nil
+	updateQuery := `UPDATE inventory SET reserved = reserved - $1, updated_at = CURRENT_TIMESTAMP WHERE product_id = $2`
+	_, err = tx.ExecContext(ctx, updateQuery, amount_released, productID)
+	if err != nil {
+		return err
+	}
+
+	return tx.Commit()
 }
 
 // decrease both the reserved and quantity properties of an item
 // used to fulfill an order
-func (dr *DataRepo_Inventory) Fulfill_Reservation(_ context.Context, productID, amount_fulfilled int) error {
-	dr.mu.Lock()
-	defer dr.mu.Unlock()
+func (dr *DataRepo_Inventory) Fulfill_Reservation(ctx context.Context, productID, amount_fulfilled int) error {
+	tx, err := dr.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
 
-	item, exists := dr.items[productID]
-	if !exists {
+	var reserved int
+	query := `SELECT reserved FROM inventory WHERE product_id = $1 FOR UPDATE`
+	err = tx.QueryRowContext(ctx, query, productID).Scan(&reserved)
+	if err == sql.ErrNoRows {
 		return fmt.Errorf("product not found in inventory")
 	}
+	if err != nil {
+		return err
+	}
 
-	if item.Reserved < amount_fulfilled {
+	if reserved < amount_fulfilled {
 		return fmt.Errorf("cannot fulfill more items than are reserved")
 	}
 
-	item.Reserved -= amount_fulfilled
-	item.Stock -= amount_fulfilled
-	return nil
+	updateQuery := `UPDATE inventory SET reserved = reserved - $1, stock = stock - $1, updated_at = CURRENT_TIMESTAMP WHERE product_id = $2`
+	_, err = tx.ExecContext(ctx, updateQuery, amount_fulfilled, productID)
+	if err != nil {
+		return err
+	}
+
+	return tx.Commit()
 }
 
 // -------------------------------------------------------------------

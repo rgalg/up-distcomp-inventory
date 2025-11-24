@@ -1,6 +1,8 @@
 package main
 
 import (
+	"database/sql"
+
 	"fmt"
 	"log"
 	"net"
@@ -10,15 +12,62 @@ import (
 	"strconv"
 	"syscall"
 
-	"github.com/gorilla/mux"
-	"google.golang.org/grpc"
-
 	orders_controller "orders-service/internal/controller"
 	orders_handler_http "orders-service/internal/handler"
 	orders_repository "orders-service/internal/repository"
-	
+
 	pb "orders-service/proto/orders"
+
+	"github.com/gorilla/mux"
+	"github.com/joho/godotenv"
+	_ "github.com/lib/pq" // PostgreSQL driver
+	"google.golang.org/grpc"
 )
+
+func initDB() (*sql.DB, error) {
+	// load .env file if it exists
+	if err := godotenv.Load("../../../.env"); err != nil {
+		log.Println("No .env file found, using environment variables")
+	}
+
+	// look for database credentials in the environment variables
+	host := getEnv("DB_HOST", "localhost")
+	port := getEnv("DB_PORT", "5432")
+	user := getEnv("DB_USER", "inventory_user")
+	password := getEnv("DB_PASSWORD", "")
+	dbname := getEnv("DB_NAME", "inventory_db")
+
+	if password == "" {
+		return nil, fmt.Errorf("DB_PASSWORD is required")
+	}
+
+	connStr := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
+		host, port, user, password, dbname)
+
+	db, err := sql.Open("postgres", connStr)
+	if err != nil {
+		return nil, err
+	}
+
+	// test the connection to the db
+	if err = db.Ping(); err != nil {
+		return nil, err
+	}
+
+	// set connection pool settings
+	db.SetMaxOpenConns(25)
+	db.SetMaxIdleConns(5)
+
+	log.Printf("Successfully connected to PostgreSQL at %s:%s", host, port)
+	return db, nil
+}
+
+func getEnv(key, defaultValue string) string {
+	if value := os.Getenv(key); value != "" {
+		return value
+	}
+	return defaultValue
+}
 
 func main() {
 	var err error
@@ -34,6 +83,14 @@ func main() {
 	// -------------------------------------------------------------------
 	// variable initialization
 	// -------------------------------------------------------------------
+
+	// initializing database connection
+	db, err := initDB()
+	if err != nil {
+		log.Fatalf("Failed to connect to database: %v", err)
+	}
+	defer db.Close()
+
 	// getting the service port from environment variable or defaulting to 8003
 	port, err = strconv.Atoi(os.Getenv("PORT"))
 	if err != nil {
@@ -65,7 +122,7 @@ func main() {
 	// initializing context
 	//ctx = context.Background()
 	// volatile data repository
-	datarepo = orders_repository.New()
+	datarepo = orders_repository.New(db)
 	// controller
 	controller = orders_controller.New(datarepo)
 	// handler (HTTP still uses consul for backward compatibility, but pass nil now)

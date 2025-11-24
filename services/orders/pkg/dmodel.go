@@ -3,8 +3,9 @@ package orders_dmodel
 import "time"
 
 type OrderItem struct {
-	ProductID int `json:"product_id"`
-	Quantity  int `json:"quantity"`
+	ProductID int     `json:"product_id"`
+	Quantity  int     `json:"quantity"`
+	Price     float64 `json:"price,omitempty"`
 }
 
 type Order struct {
