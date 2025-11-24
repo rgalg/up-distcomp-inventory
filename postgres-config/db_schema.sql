@@ -18,8 +18,9 @@ CREATE TABLE IF NOT EXISTS inventory (
 -- orders
 CREATE TABLE IF NOT EXISTS orders (
     id SERIAL PRIMARY KEY,
-    customer_name VARCHAR(255) NOT NULL,
+    customer_id INTEGER NOT NULL,
     status VARCHAR(50) NOT NULL DEFAULT 'pending',
+    total_amount DECIMAL(10, 2) NOT NULL DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 -- order_items
@@ -33,12 +34,12 @@ CREATE TABLE IF NOT EXISTS order_items (
 
 -- populating with sample data
 -- initial products
-INSERT INTO products (name, description, price, category) VALUES
-    ('Laptop', 'High-performance laptop', 999.99, 'Electronics'),
-    ('Mouse', 'Wireless optical mouse', 29.99, 'Electronics'),
-    ('Keyboard', 'Mechanical keyboard', 79.99, 'Electronics'),
-    ('Monitor', '24-inch LCD monitor', 199.99, 'Electronics'),
-    ('Desk Chair', 'Ergonomic office chair', 149.99, 'Furniture')
+INSERT INTO products (id, name, description, price, category) VALUES
+    (1, 'Laptop', 'High-performance laptop', 999.99, 'Electronics'),
+    (2, 'Mouse', 'Wireless optical mouse', 29.99, 'Electronics'),
+    (3, 'Keyboard', 'Mechanical keyboard', 79.99, 'Electronics'),
+    (4, 'Monitor', '24-inch LCD monitor', 199.99, 'Electronics'),
+    (5, 'Desk Chair', 'Ergonomic office chair', 149.99, 'Furniture')
 ON CONFLICT (id) DO NOTHING;
     
 -- initial inventory
