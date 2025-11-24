@@ -41,7 +41,6 @@ INSERT INTO products (id, name, description, price, category) VALUES
     (4, 'Monitor', '24-inch LCD monitor', 199.99, 'Electronics'),
     (5, 'Desk Chair', 'Ergonomic office chair', 149.99, 'Furniture')
 ON CONFLICT (id) DO NOTHING;
-    
 -- initial inventory
 INSERT INTO inventory (product_id, stock, reserved) VALUES
     (1, 50, 0),
