@@ -4,15 +4,7 @@ name: inventory-cluster
 nodes:
 - role: control-plane
   extraPortMappings:
+  # Only frontend exposed externally via LoadBalancer
   - containerPort: 30000
     hostPort: 3000
-    protocol: TCP
-  - containerPort: 30001
-    hostPort: 8001
-    protocol: TCP
-  - containerPort: 30002
-    hostPort: 8002
-    protocol: TCP
-  - containerPort: 30003
-    hostPort: 8003
     protocol: TCP
