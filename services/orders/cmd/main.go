@@ -31,14 +31,14 @@ func initDB() (*sql.DB, error) {
 	}
 
 	// look for database credentials in the environment variables
-	host := getEnv("DB_HOST", "localhost")
-	port := getEnv("DB_PORT", "5432")
-	user := getEnv("DB_USER", "inventory_user")
+	host := getEnv("DB_HOST", "")
+	port := getEnv("DB_PORT", "")
+	user := getEnv("DB_USER", "")
 	password := getEnv("DB_PASSWORD", "")
 	dbname := getEnv("DB_NAME", "inventory_db")
-
-	if password == "" {
-		return nil, fmt.Errorf("DB_PASSWORD is required")
+	// throw and error if any required env variable is missing
+	if password == "" || host == "" || port == "" || user == "" || dbname == "" {
+		return nil, fmt.Errorf("An environment variable is missing: DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_NAME are required")
 	}
 
 	connStr := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
