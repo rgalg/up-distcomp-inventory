@@ -53,6 +53,8 @@ spec:
               value: "%(protocol)s://%(domain)s:%(http_port)s/grafana/"
             - name: GF_SERVER_SERVE_FROM_SUB_PATH
               value: "false"
+            - name: GF_PATHS_DATA
+              value: "/var/lib/grafana/data"
           resources:
             requests:
               cpu: 100m
@@ -68,7 +70,7 @@ spec:
             - name: grafana-k6-dashboard
               mountPath: /var/lib/grafana/dashboards
             - name: grafana-data
-              mountPath: /var/lib/grafana
+              mountPath: /var/lib/grafana/data
           readinessProbe:
             httpGet:
               path: /api/health

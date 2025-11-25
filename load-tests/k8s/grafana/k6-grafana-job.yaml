@@ -42,10 +42,6 @@ spec:
               value: "http://inventory-service:8002"
             - name: ORDERS_URL
               value: "http://orders-service:8003"
-            - name: K6_INFLUXDB_ADDR
-              value: "http://influxdb:8086"
-            - name: K6_INFLUXDB_DB
-              value: "k6"
           resources:
             requests:
               cpu: 200m
