@@ -2,12 +2,13 @@
 
 ## Testing Approaches
 
-This project supports two testing approaches for K6 load testing:
+This project supports three testing approaches for K6 load testing:
 
-| Approach | Best For | Max Throughput | Setup Complexity |
-|----------|----------|----------------|------------------|
-| **Port-Forward** | Quick smoke tests, debugging | ~15-20 req/s | Low (local K6) |
-| **In-Cluster** | High-load testing, HPA testing | 100+ req/s | Medium (K8s jobs) |
+| Approach | Best For | Max Throughput | Setup Complexity | Real-time Monitoring |
+|----------|----------|----------------|------------------|---------------------|
+| **Port-Forward** | Quick smoke tests, debugging | ~15-20 req/s | Low (local K6) | No |
+| **In-Cluster** | High-load testing, HPA testing | 100+ req/s | Medium (K8s jobs) | No |
+| **Grafana** | Load testing with dashboards | 100+ req/s | Medium (K8s deploy) | Yes ✓ |
 
 ### Port-Forward Limitations
 
@@ -22,6 +23,12 @@ This project supports two testing approaches for K6 load testing:
 - Load testing (50+ req/s)
 - Stress testing / HPA testing
 - Realistic performance measurements
+
+**Use Grafana for:**
+- Load testing with real-time visualization
+- Performance monitoring dashboards
+- Long-running test observation
+- Team collaboration and sharing results
 
 ## Quick Start
 
@@ -53,6 +60,25 @@ cd load-tests
 
 # Interactive testing with debug pod
 ./create-debug-pod.sh
+```
+
+### Option 3: Grafana-Based Testing (Recommended for Monitoring)
+
+```bash
+cd load-tests
+
+# Deploy Grafana infrastructure and run smoke test
+./deploy-grafana-k6.sh run smoke
+
+# Or deploy infrastructure first, then run tests
+./deploy-grafana-k6.sh deploy
+./deploy-grafana-k6.sh run products
+
+# Access Grafana dashboard at http://localhost:3001
+# View real-time metrics during test execution
+
+# Clean up when done
+./deploy-grafana-k6.sh delete
 ```
 
 ## In-Cluster Load Testing (Recommended for High Load)
@@ -139,6 +165,130 @@ kubectl get jobs -n inventory-system -l app=k6-load-tests -w
 # View logs
 kubectl logs -f -l app=k6-load-tests -n inventory-system
 ```
+
+## Grafana-Based Load Testing (Real-Time Monitoring)
+
+The Grafana-based approach deploys InfluxDB and Grafana to Kubernetes, allowing you to visualize K6 metrics in real-time through interactive dashboards.
+
+### Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                         Kubernetes Cluster                          │
+│  ┌─────────────┐    ┌─────────────┐    ┌─────────────────────────┐ │
+│  │   K6 Job    │───▶│  InfluxDB   │◀───│        Grafana          │ │
+│  │ (Load Test) │    │  (Metrics)  │    │ (Dashboard @ :3001)    │ │
+│  └─────────────┘    └─────────────┘    └─────────────────────────┘ │
+│         │                                          ▲                │
+│         ▼                                          │                │
+│  ┌─────────────────────────────────────────┐       │                │
+│  │        Application Services             │       │                │
+│  │  (Products, Inventory, Orders)          │       │                │
+│  └─────────────────────────────────────────┘       │                │
+└────────────────────────────────────────────────────│────────────────┘
+                                                     │
+                                             Browser Access
+                                          http://localhost:3001
+```
+
+### Quick Start
+
+```bash
+# Deploy Grafana infrastructure (InfluxDB + Grafana + dashboards)
+./deploy-grafana-k6.sh deploy
+
+# Run a smoke test with Grafana output
+./deploy-grafana-k6.sh run smoke
+
+# Run products service test and watch logs
+./deploy-grafana-k6.sh run products -w
+
+# Access Grafana dashboard
+# Open http://localhost:3001 in your browser
+```
+
+### Using deploy-grafana-k6.sh
+
+The main script for Grafana-based load testing:
+
+```bash
+# Deploy infrastructure only
+./deploy-grafana-k6.sh deploy
+
+# List available tests
+./deploy-grafana-k6.sh --list
+
+# Run specific tests
+./deploy-grafana-k6.sh run smoke
+./deploy-grafana-k6.sh run products
+./deploy-grafana-k6.sh run inventory
+./deploy-grafana-k6.sh run orders
+./deploy-grafana-k6.sh run full
+
+# Check status of all components
+./deploy-grafana-k6.sh status
+
+# View test logs
+./deploy-grafana-k6.sh logs products
+./deploy-grafana-k6.sh logs products -f  # Follow logs
+
+# Stop a running test
+./deploy-grafana-k6.sh stop products
+./deploy-grafana-k6.sh stop all
+
+# Cleanup completed jobs
+./deploy-grafana-k6.sh cleanup
+
+# Delete all Grafana infrastructure
+./deploy-grafana-k6.sh delete
+```
+
+### Accessing Grafana
+
+After deployment, Grafana is accessible at:
+
+- **URL**: http://localhost:3001
+- **Credentials**: admin / admin (anonymous access is also enabled)
+
+The K6 Load Testing Dashboard is automatically provisioned and includes:
+
+- **HTTP Requests per Second**: Real-time request rate
+- **HTTP Request Duration**: Response time percentiles (p50, p90, p95, p99)
+- **Virtual Users**: Active VU count during the test
+- **Error Rate**: HTTP request failure percentage
+- **Data Transfer**: Bytes sent and received per second
+- **Iterations**: Test iterations completed per second
+- **Checks Pass Rate**: Success rate of K6 checks
+
+### Dashboard Features
+
+The auto-provisioned K6 dashboard provides:
+
+1. **Real-time Updates**: 5-second auto-refresh during tests
+2. **Time Range Selection**: Zoom into specific test periods
+3. **Percentile Analysis**: Detailed latency distribution
+4. **Error Tracking**: Immediate visibility into failures
+5. **Custom Queries**: InfluxDB datasource for ad-hoc analysis
+
+### Grafana Infrastructure Components
+
+The Grafana-based testing deploys the following components:
+
+| Component | Service Type | Port | Purpose |
+|-----------|-------------|------|---------|
+| InfluxDB | ClusterIP | 8086 | Time-series metrics storage |
+| Grafana | LoadBalancer | 3001 | Dashboard visualization |
+
+### Kubernetes Manifests
+
+Located in `k8s/grafana/`:
+
+| File | Purpose |
+|------|---------|
+| `influxdb-deployment.yaml` | InfluxDB deployment and service |
+| `grafana-configmaps.yaml` | Grafana datasources, dashboard provider, and K6 dashboard |
+| `grafana-deployment.yaml` | Grafana deployment and LoadBalancer service |
+| `k6-grafana-job.yaml` | K6 job templates with InfluxDB output |
 
 ## High-Load Test Configurations
 
@@ -366,19 +516,76 @@ kubectl logs -n inventory-system -l app=products-service
 k6 run --vus 1 --duration 10s scripts/smoke-test.js
 ```
 
+### Grafana Testing Issues
+
+**Grafana not accessible:**
+```bash
+# Check Grafana deployment status
+kubectl get deployment grafana -n inventory-system
+kubectl get pods -n inventory-system -l app=grafana
+
+# Check Grafana service
+kubectl get svc grafana -n inventory-system
+
+# View Grafana logs
+kubectl logs -n inventory-system -l app=grafana
+
+# Verify LoadBalancer is correctly mapped
+kubectl describe svc grafana -n inventory-system
+```
+
+**InfluxDB connection issues:**
+```bash
+# Check InfluxDB deployment
+kubectl get deployment influxdb -n inventory-system
+kubectl get pods -n inventory-system -l app=influxdb
+
+# View InfluxDB logs
+kubectl logs -n inventory-system -l app=influxdb
+
+# Test InfluxDB connectivity from inside the cluster
+kubectl run curl-test --rm -it --image=curlimages/curl -- curl http://influxdb:8086/ping
+```
+
+**No data in Grafana dashboard:**
+```bash
+# Check if K6 job is running with InfluxDB output
+kubectl get jobs -n inventory-system -l app=k6-grafana-load-tests
+
+# View K6 job logs for InfluxDB errors
+kubectl logs -n inventory-system -l app=k6-grafana-load-tests
+
+# Verify K6 is outputting to InfluxDB (should see "influxdb" in the logs)
+```
+
+**Dashboard not provisioned:**
+```bash
+# Check ConfigMaps for Grafana
+kubectl get configmap -n inventory-system | grep grafana
+
+# Restart Grafana to reload provisioning
+kubectl rollout restart deployment/grafana -n inventory-system
+```
+
 ## Cleanup
 
 ```bash
 # Stop port forwards
 pkill -f "port-forward.*inventory-system"
 
-# Clean up K6 jobs
+# Clean up K6 jobs (in-cluster)
 ./run-in-cluster.sh cleanup
 
 # Delete debug pod
 ./create-debug-pod.sh --delete
 
-# Stop Docker services
+# Clean up Grafana K6 jobs
+./deploy-grafana-k6.sh cleanup
+
+# Delete Grafana infrastructure (InfluxDB + Grafana)
+./deploy-grafana-k6.sh delete
+
+# Stop Docker services (for docker-compose based testing)
 docker compose down
 
 # Remove volumes (deletes test data)

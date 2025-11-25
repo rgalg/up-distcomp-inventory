@@ -1,0 +1,251 @@
+# K6 Job template for Grafana-based load testing
+# This job runs K6 tests and sends metrics to InfluxDB for visualization in Grafana
+#
+# Usage examples:
+#   ./deploy-grafana-k6.sh run smoke
+#   ./deploy-grafana-k6.sh run products
+#   ./deploy-grafana-k6.sh run full
+#
+# The test results will be visible in Grafana at http://localhost:30300
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: k6-grafana-load-test
+  namespace: inventory-system
+  labels:
+    app: k6-grafana-load-tests
+spec:
+  ttlSecondsAfterFinished: 600
+  backoffLimit: 0
+  template:
+    metadata:
+      labels:
+        app: k6-grafana-load-tests
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: k6
+          image: grafana/k6:latest
+          command:
+            - k6
+            - run
+            - --out
+            - influxdb=http://influxdb:8086/k6
+            - /scripts/smoke-test.js
+          env:
+            - name: BASE_URL
+              value: "http://products-service:8001"
+            - name: PRODUCTS_URL
+              value: "http://products-service:8001"
+            - name: INVENTORY_URL
+              value: "http://inventory-service:8002"
+            - name: ORDERS_URL
+              value: "http://orders-service:8003"
+          resources:
+            requests:
+              cpu: 200m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          volumeMounts:
+            - name: scripts
+              mountPath: /scripts
+              readOnly: true
+      volumes:
+        - name: scripts
+          configMap:
+            name: k6-scripts
+---
+# Products Service Load Test with Grafana output
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: k6-grafana-products-test
+  namespace: inventory-system
+  labels:
+    app: k6-grafana-load-tests
+    test: products-service
+spec:
+  ttlSecondsAfterFinished: 600
+  backoffLimit: 0
+  template:
+    metadata:
+      labels:
+        app: k6-grafana-load-tests
+        test: products-service
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: k6
+          image: grafana/k6:latest
+          command:
+            - k6
+            - run
+            - --out
+            - influxdb=http://influxdb:8086/k6
+            - /scripts/products-service-test.js
+          env:
+            - name: BASE_URL
+              value: "http://products-service:8001"
+          resources:
+            requests:
+              cpu: 200m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          volumeMounts:
+            - name: scripts
+              mountPath: /scripts
+              readOnly: true
+      volumes:
+        - name: scripts
+          configMap:
+            name: k6-scripts
+---
+# Inventory Service Load Test with Grafana output
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: k6-grafana-inventory-test
+  namespace: inventory-system
+  labels:
+    app: k6-grafana-load-tests
+    test: inventory-service
+spec:
+  ttlSecondsAfterFinished: 600
+  backoffLimit: 0
+  template:
+    metadata:
+      labels:
+        app: k6-grafana-load-tests
+        test: inventory-service
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: k6
+          image: grafana/k6:latest
+          command:
+            - k6
+            - run
+            - --out
+            - influxdb=http://influxdb:8086/k6
+            - /scripts/inventory-service-test.js
+          env:
+            - name: BASE_URL
+              value: "http://inventory-service:8002"
+          resources:
+            requests:
+              cpu: 200m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          volumeMounts:
+            - name: scripts
+              mountPath: /scripts
+              readOnly: true
+      volumes:
+        - name: scripts
+          configMap:
+            name: k6-scripts
+---
+# Orders Service Load Test with Grafana output
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: k6-grafana-orders-test
+  namespace: inventory-system
+  labels:
+    app: k6-grafana-load-tests
+    test: orders-service
+spec:
+  ttlSecondsAfterFinished: 600
+  backoffLimit: 0
+  template:
+    metadata:
+      labels:
+        app: k6-grafana-load-tests
+        test: orders-service
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: k6
+          image: grafana/k6:latest
+          command:
+            - k6
+            - run
+            - --out
+            - influxdb=http://influxdb:8086/k6
+            - /scripts/orders-service-test.js
+          env:
+            - name: BASE_URL
+              value: "http://orders-service:8003"
+          resources:
+            requests:
+              cpu: 200m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          volumeMounts:
+            - name: scripts
+              mountPath: /scripts
+              readOnly: true
+      volumes:
+        - name: scripts
+          configMap:
+            name: k6-scripts
+---
+# Full Scenario Load Test with Grafana output
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: k6-grafana-full-scenario-test
+  namespace: inventory-system
+  labels:
+    app: k6-grafana-load-tests
+    test: full-scenario
+spec:
+  ttlSecondsAfterFinished: 600
+  backoffLimit: 0
+  template:
+    metadata:
+      labels:
+        app: k6-grafana-load-tests
+        test: full-scenario
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: k6
+          image: grafana/k6:latest
+          command:
+            - k6
+            - run
+            - --out
+            - influxdb=http://influxdb:8086/k6
+            - /scripts/full-scenario-test.js
+          env:
+            - name: PRODUCTS_URL
+              value: "http://products-service:8001"
+            - name: INVENTORY_URL
+              value: "http://inventory-service:8002"
+            - name: ORDERS_URL
+              value: "http://orders-service:8003"
+          resources:
+            requests:
+              cpu: 200m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          volumeMounts:
+            - name: scripts
+              mountPath: /scripts
+              readOnly: true
+      volumes:
+        - name: scripts
+          configMap:
+            name: k6-scripts
