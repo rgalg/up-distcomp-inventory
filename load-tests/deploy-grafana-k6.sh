@@ -23,7 +23,7 @@ set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 NAMESPACE="inventory-system"
-GRAFANA_PORT="30300"
+GRAFANA_PORT="3001"
 
 # Service URLs (internal Kubernetes DNS names)
 PRODUCTS_SERVICE_URL="http://products-service:8001"

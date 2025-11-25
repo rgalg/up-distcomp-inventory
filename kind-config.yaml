@@ -4,7 +4,11 @@ name: inventory-cluster
 nodes:
 - role: control-plane
   extraPortMappings:
-  # Only frontend exposed externally via LoadBalancer
+  # Frontend exposed externally via LoadBalancer
   - containerPort: 30000
     hostPort: 3000
+    protocol: TCP
+  # Grafana for K6 load testing dashboards via LoadBalancer
+  - containerPort: 30300
+    hostPort: 3001
     protocol: TCP

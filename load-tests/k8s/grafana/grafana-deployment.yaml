@@ -10,11 +10,10 @@ spec:
   ports:
     - port: 3000
       targetPort: 3000
-      nodePort: 30300
       name: http
   selector:
     app: grafana
-  type: NodePort
+  type: LoadBalancer
 ---
 apiVersion: apps/v1
 kind: Deployment

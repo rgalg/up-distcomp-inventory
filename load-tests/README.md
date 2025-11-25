@@ -74,7 +74,7 @@ cd load-tests
 ./deploy-grafana-k6.sh deploy
 ./deploy-grafana-k6.sh run products
 
-# Access Grafana dashboard at http://localhost:30300
+# Access Grafana dashboard at http://localhost:3001
 # View real-time metrics during test execution
 
 # Clean up when done
@@ -177,7 +177,7 @@ The Grafana-based approach deploys InfluxDB and Grafana to Kubernetes, allowing 
 │                         Kubernetes Cluster                          │
 │  ┌─────────────┐    ┌─────────────┐    ┌─────────────────────────┐ │
 │  │   K6 Job    │───▶│  InfluxDB   │◀───│        Grafana          │ │
-│  │ (Load Test) │    │  (Metrics)  │    │ (Dashboard @ :30300)    │ │
+│  │ (Load Test) │    │  (Metrics)  │    │ (Dashboard @ :3001)    │ │
 │  └─────────────┘    └─────────────┘    └─────────────────────────┘ │
 │         │                                          ▲                │
 │         ▼                                          │                │
@@ -188,7 +188,7 @@ The Grafana-based approach deploys InfluxDB and Grafana to Kubernetes, allowing 
 └────────────────────────────────────────────────────│────────────────┘
                                                      │
                                              Browser Access
-                                          http://localhost:30300
+                                          http://localhost:3001
 ```
 
 ### Quick Start
@@ -204,7 +204,7 @@ The Grafana-based approach deploys InfluxDB and Grafana to Kubernetes, allowing 
 ./deploy-grafana-k6.sh run products -w
 
 # Access Grafana dashboard
-# Open http://localhost:30300 in your browser
+# Open http://localhost:3001 in your browser
 ```
 
 ### Using deploy-grafana-k6.sh
@@ -247,7 +247,7 @@ The main script for Grafana-based load testing:
 
 After deployment, Grafana is accessible at:
 
-- **URL**: http://localhost:30300
+- **URL**: http://localhost:3001
 - **Credentials**: admin / admin (anonymous access is also enabled)
 
 The K6 Load Testing Dashboard is automatically provisioned and includes:
@@ -277,7 +277,7 @@ The Grafana-based testing deploys the following components:
 | Component | Service Type | Port | Purpose |
 |-----------|-------------|------|---------|
 | InfluxDB | ClusterIP | 8086 | Time-series metrics storage |
-| Grafana | NodePort | 30300 | Dashboard visualization |
+| Grafana | LoadBalancer | 3001 | Dashboard visualization |
 
 ### Kubernetes Manifests
 
@@ -287,7 +287,7 @@ Located in `k8s/grafana/`:
 |------|---------|
 | `influxdb-deployment.yaml` | InfluxDB deployment and service |
 | `grafana-configmaps.yaml` | Grafana datasources, dashboard provider, and K6 dashboard |
-| `grafana-deployment.yaml` | Grafana deployment and NodePort service |
+| `grafana-deployment.yaml` | Grafana deployment and LoadBalancer service |
 | `k6-grafana-job.yaml` | K6 job templates with InfluxDB output |
 
 ## High-Load Test Configurations
@@ -530,7 +530,7 @@ kubectl get svc grafana -n inventory-system
 # View Grafana logs
 kubectl logs -n inventory-system -l app=grafana
 
-# Verify NodePort is correctly mapped
+# Verify LoadBalancer is correctly mapped
 kubectl describe svc grafana -n inventory-system
 ```
 
