@@ -14,6 +14,57 @@ This application consists of four main components:
 ### Frontend
 4. **Web Application** (Port 3000) - Simple HTML/CSS/JS interface
 
+### System Architecture Diagram
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────────────────┐
+│                                     Kind Cluster                                             │
+│                                 (inventory-cluster)                                          │
+├─────────────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                              │
+│                              Namespace: inventory-system                                     │
+│                                                                                              │
+│   External Access                                                                            │
+│   ═══════════════                                                                           │
+│                                                                                              │
+│   ┌─────────────────────────────────────────────────────────────────────────────────────┐   │
+│   │                             Frontend (LoadBalancer)                                  │   │
+│   │                               localhost:3000                                         │   │
+│   │                                                                                      │   │
+│   │   ┌─────────────────┐                                                               │   │
+│   │   │ NGINX Container │──────────► Reverse Proxy to Backend Services                  │   │
+│   │   └─────────────────┘                                                               │   │
+│   └─────────────────────────────────────────────────────────────────────────────────────┘   │
+│                                           │                                                  │
+│                                           │ HTTP                                             │
+│                                           ▼                                                  │
+│   ┌─────────────────────────────────────────────────────────────────────────────────────┐   │
+│   │                           Backend Services (ClusterIP)                               │   │
+│   │                                                                                      │   │
+│   │   ┌─────────────────┐   ┌──────────────────┐   ┌─────────────────┐                  │   │
+│   │   │ Products Service│   │ Inventory Service│   │  Orders Service │                  │   │
+│   │   │  HTTP: 8001     │   │   HTTP: 8002     │   │   HTTP: 8003    │                  │   │
+│   │   │  gRPC: 9001     │   │   gRPC: 9002     │   │   gRPC: 9003    │                  │   │
+│   │   │  HPA: 1-5 pods  │   │   HPA: 1-5 pods  │   │   HPA: 1-5 pods │                  │   │
+│   │   └────────┬────────┘   └────────┬─────────┘   └────────┬────────┘                  │   │
+│   │            │                     │                       │                           │   │
+│   │            │                     │ gRPC                  │                           │   │
+│   │            │◄────────────────────┼───────────────────────┘                           │   │
+│   │            │                     │                                                   │   │
+│   └────────────┼─────────────────────┼───────────────────────────────────────────────────┘   │
+│                │                     │                                                       │
+│                └──────────┬──────────┘                                                       │
+│                           │                                                                  │
+│                           ▼                                                                  │
+│   ┌─────────────────────────────────────────────────────────────────────────────────────┐   │
+│   │                              PostgreSQL (ClusterIP)                                  │   │
+│   │                                   Port: 5432                                         │   │
+│   │                           Persistent Volume: 1Gi                                     │   │
+│   └─────────────────────────────────────────────────────────────────────────────────────┘   │
+│                                                                                              │
+└─────────────────────────────────────────────────────────────────────────────────────────────┘
+```
+
 ## Features
 
 - **Product Management**: View and manage product catalog including product categories and descriptions
@@ -141,6 +192,12 @@ Body: {"quantity": 5}
 #### Fulfill Reservation
 ```
 POST /inventory/{productId}/fulfill
+Body: {"quantity": 5}
+```
+
+#### Release Reservation
+```
+POST /inventory/{productId}/release_reservation
 Body: {"quantity": 5}
 ```
 
@@ -298,3 +355,58 @@ The application starts with sample data:
 - **Cloud Native**: Designed for Kubernetes deployment
 - **Flexibility**: Easy to modify or replace individual services
 - **Production Ready**: Can be deployed to any Kubernetes cluster (GKE, EKS, AKS, etc.)
+
+## Load Testing
+
+The project includes comprehensive load testing infrastructure using K6. Three testing approaches are supported:
+
+| Approach | Best For | Max Throughput | Setup Complexity |
+|----------|----------|----------------|------------------|
+| **Port-Forward** | Quick smoke tests, debugging | ~15-20 req/s | Low |
+| **In-Cluster** | High-load testing, HPA testing | 100+ req/s | Medium |
+| **Grafana** | Load testing with real-time dashboards | 100+ req/s | Medium |
+
+### Quick Load Test
+
+```bash
+cd load-tests
+
+# Port-forward testing (quick smoke tests)
+./run-test.sh scripts/smoke-test.js
+
+# In-cluster testing (higher load)
+./run-in-cluster.sh run smoke
+
+# Grafana-based testing (with dashboards at localhost:3001)
+./deploy-grafana-k6.sh run smoke
+```
+
+For detailed load testing documentation, see [load-tests/README.md](load-tests/README.md).
+
+## Project Structure
+
+```
+up-distcomp-inventory/
+├── services/                    # Backend microservices
+│   ├── products/               # Products service (Go)
+│   ├── inventory/              # Inventory service (Go)
+│   └── orders/                 # Orders service (Go)
+├── frontend/                    # Web application (HTML/CSS/JS)
+├── k8s/                        # Kubernetes manifests
+├── load-tests/                 # K6 load testing scripts
+├── proto/                      # Protocol Buffer definitions
+├── postgres-config/            # Database schema
+├── deploy-kind.sh              # Deployment script
+├── kind-config.yaml            # Kind cluster configuration
+├── verify-setup.sh             # Setup verification script
+└── README.md                   # This file
+```
+
+## Additional Documentation
+
+- [Products Service](services/products/README.md) - Product catalog management
+- [Inventory Service](services/inventory/README.md) - Stock and reservation management
+- [Orders Service](services/orders/README.md) - Order processing
+- [Frontend](frontend/README.md) - Web interface
+- [Kubernetes Configuration](k8s/README.md) - Infrastructure and deployment
+- [Load Testing](load-tests/README.md) - Performance testing
