@@ -2,6 +2,12 @@ set -e
 
 CLUSTER_NAME="inventory-cluster"
 
+
+GREEN='\033[0;32m'
+RED='\033[0;31m'
+YELLOW='\033[1;33m'
+NC='\033[0m'
+
 # helper function to wait for pods to be ready
 wait_for_pods() {
     local label=$1
@@ -189,6 +195,63 @@ kubectl wait --for=condition=available --timeout=180s deployment/frontend -n inv
 # deploy Horizontal Pod Autoscalers
 printf "Deploying Horizontal Pod Autoscalers...\n"
 kubectl apply -f k8s/hpa.yaml
+
+printf "======================================\n\n"
+
+# -----------------------------------------
+# metrics server for HPA
+# -----------------------------------------
+
+printf "======================================\n"
+printf "====   Deploying Metrics Server   ====\n"
+printf "======================================\n"
+
+# Install metrics-server
+kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
+
+echo "Waiting for metrics-server deployment to be created (5 seconds)..."
+sleep 5
+
+# Patch metrics-server for Kind
+kubectl patch deployment metrics-server -n kube-system --type='json' -p='[
+  {
+    "op": "add",
+    "path": "/spec/template/spec/containers/0/args/-",
+    "value": "--kubelet-insecure-tls"
+  },
+  {
+    "op": "add",
+    "path": "/spec/template/spec/containers/0/args/-",
+    "value": "--kubelet-preferred-address-types=InternalIP"
+  }
+]' 2>/dev/null || echo "metrics-server patch already applied or failed"
+
+echo "Waiting for metrics-server to be ready..."
+kubectl wait --for=condition=ready pod -l k8s-app=metrics-server -n kube-system --timeout=90s || {
+  echo -e "${YELLOW}⚠${NC} metrics-server not ready yet, it may take a few more minutes"
+}
+
+echo -e "\n${GREEN}SUCCESS:${NC} metrics-server installed"
+
+# Wait a bit for initial metrics to populate
+echo -e "\n${YELLOW}=== Verifying HPA Configuration ===${NC}"
+# Wait for the HPA
+echo "Waiting for metrics to populate (30 seconds)..."
+sleep 3
+until kubectl get hpa -n inventory-system &>/dev/null; do
+    printf "Waiting HPA metrics server to be ready...\n"
+    sleep 2
+done
+if kubectl get hpa -n inventory-system &>/dev/null; then
+  echo -e "${GREEN}SUCESS:${NC} HPA resources created:"
+  kubectl get hpa -n inventory-system
+else
+  echo -e "${RED}ERROR:${NC} No HPA resources found"
+fi
+
+echo -e "\n${YELLOW}Note: It may take 1-2 minutes for HPA metrics to show actual values instead of <unknown>${NC}"
+echo -e "Check status with: ${GREEN}kubectl get hpa -n inventory-system${NC}"
+echo -e "Monitor during load tests with: ${GREEN}watch -n 2 'kubectl get hpa -n inventory-system'${NC}"
 
 printf "======================================\n\n"
 
