@@ -18,50 +18,50 @@ This application consists of four main components:
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────────────────┐
-│                                     Kind Cluster                                             │
-│                                 (inventory-cluster)                                          │
+│                                     Kind Cluster                                            │
+│                                 (inventory-cluster)                                         │
 ├─────────────────────────────────────────────────────────────────────────────────────────────┤
-│                                                                                              │
-│                              Namespace: inventory-system                                     │
-│                                                                                              │
-│   External Access                                                                            │
+│                                                                                             │
+│                              Namespace: inventory-system                                    │
+│                                                                                             │
+│   External Access                                                                           │
 │   ═══════════════                                                                           │
-│                                                                                              │
+│                                                                                             │
 │   ┌─────────────────────────────────────────────────────────────────────────────────────┐   │
-│   │                             Frontend (LoadBalancer)                                  │   │
-│   │                               localhost:3000                                         │   │
-│   │                                                                                      │   │
+│   │                             Frontend (LoadBalancer)                                 │   │
+│   │                               localhost:3000                                        │   │
+│   │                                                                                     │   │
 │   │   ┌─────────────────┐                                                               │   │
 │   │   │ NGINX Container │──────────► Reverse Proxy to Backend Services                  │   │
 │   │   └─────────────────┘                                                               │   │
 │   └─────────────────────────────────────────────────────────────────────────────────────┘   │
-│                                           │                                                  │
-│                                           │ HTTP                                             │
-│                                           ▼                                                  │
+│                                           │                                                 │
+│                                           │ HTTP                                            │
+│                                           ▼                                                 │
 │   ┌─────────────────────────────────────────────────────────────────────────────────────┐   │
-│   │                           Backend Services (ClusterIP)                               │   │
-│   │                                                                                      │   │
+│   │                           Backend Services (ClusterIP)                              │   │
+│   │                                                                                     │   │
 │   │   ┌─────────────────┐   ┌──────────────────┐   ┌─────────────────┐                  │   │
 │   │   │ Products Service│   │ Inventory Service│   │  Orders Service │                  │   │
 │   │   │  HTTP: 8001     │   │   HTTP: 8002     │   │   HTTP: 8003    │                  │   │
 │   │   │  gRPC: 9001     │   │   gRPC: 9002     │   │   gRPC: 9003    │                  │   │
 │   │   │  HPA: 1-5 pods  │   │   HPA: 1-5 pods  │   │   HPA: 1-5 pods │                  │   │
 │   │   └────────┬────────┘   └────────┬─────────┘   └────────┬────────┘                  │   │
-│   │            │                     │                       │                           │   │
-│   │            │                     │ gRPC                  │                           │   │
-│   │            │◄────────────────────┼───────────────────────┘                           │   │
-│   │            │                     │                                                   │   │
-│   └────────────┼─────────────────────┼───────────────────────────────────────────────────┘   │
-│                │                     │                                                       │
-│                └──────────┬──────────┘                                                       │
-│                           │                                                                  │
-│                           ▼                                                                  │
+│   │            │                     │                       │                          │   │
+│   │            │                     │ gRPC                  │                          │   │
+│   │            │◄────────────────────┼───────────────────────┘                          │   │
+│   │            │                     │                                                  │   │
+│   └────────────┼─────────────────────┼──────────────────────────────────────────────────┘   │
+│                │                     │                                                      │
+│                └──────────┬──────────┘                                                      │
+│                           │                                                                 │
+│                           ▼                                                                 │
 │   ┌─────────────────────────────────────────────────────────────────────────────────────┐   │
-│   │                              PostgreSQL (ClusterIP)                                  │   │
-│   │                                   Port: 5432                                         │   │
-│   │                           Persistent Volume: 1Gi                                     │   │
+│   │                              PostgreSQL (ClusterIP)                                 │   │
+│   │                                   Port: 5432                                        │   │
+│   │                           Persistent Volume: 1Gi                                    │   │
 │   └─────────────────────────────────────────────────────────────────────────────────────┘   │
-│                                                                                              │
+│                                                                                             │
 └─────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -360,11 +360,13 @@ The application starts with sample data:
 
 The project includes comprehensive load testing infrastructure using K6. Three testing approaches are supported:
 
-| Approach | Best For | Max Throughput | Setup Complexity |
-|----------|----------|----------------|------------------|
-| **Port-Forward** | Quick smoke tests, debugging | ~15-20 req/s | Low |
-| **In-Cluster** | High-load testing, HPA testing | 100+ req/s | Medium |
-| **Grafana** | Load testing with real-time dashboards | 100+ req/s | Medium |
+┌───────────────────────────────────────────────────────────────────────────────────────────────┐
+| Approach         | Best For                               | Max Throughput | Setup Complexity |
+|──────────────────|────────────────────────────────────────|────────────────|──────────────────|
+| **Port-Forward** | Quick smoke tests, debugging           | ~15-20 req/s   | Low              |
+| **In-Cluster**   | High-load testing, HPA testing         | 100+ req/s     | Medium           |
+| **Grafana**      | Load testing with real-time dashboards | 100+ req/s     | Medium           |
+└───────────────────────────────────────────────────────────────────────────────────────────────┘
 
 ### Quick Load Test
 

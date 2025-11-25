@@ -13,39 +13,41 @@ The Products Service is responsible for:
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                      Products Service                            │
+│                      Products Service                           │
 ├─────────────────────────────────────────────────────────────────┤
-│                                                                  │
+│                                                                 │
 │  ┌──────────────────┐    ┌──────────────────┐                   │
 │  │   HTTP Handler   │    │   gRPC Handler   │                   │
 │  │    (port 8001)   │    │    (port 9001)   │                   │
 │  └────────┬─────────┘    └────────┬─────────┘                   │
-│           │                       │                              │
-│           └───────────┬───────────┘                              │
-│                       ▼                                          │
-│           ┌──────────────────────┐                               │
-│           │     Controller       │                               │
-│           │  (Business Logic)    │                               │
-│           └──────────┬───────────┘                               │
-│                      ▼                                           │
-│           ┌──────────────────────┐                               │
-│           │     Repository       │                               │
-│           │   (Data Access)      │                               │
-│           └──────────┬───────────┘                               │
-│                      ▼                                           │
-│           ┌──────────────────────┐                               │
-│           │     PostgreSQL       │                               │
-│           │     (Database)       │                               │
-│           └──────────────────────┘                               │
+│           │                       │                             │
+│           └───────────┬───────────┘                             │
+│                       ▼                                         │
+│           ┌──────────────────────┐                              │
+│           │     Controller       │                              │
+│           │  (Business Logic)    │                              │
+│           └──────────┬───────────┘                              │
+│                      ▼                                          │
+│           ┌──────────────────────┐                              │
+│           │     Repository       │                              │
+│           │   (Data Access)      │                              │
+│           └──────────┬───────────┘                              │
+│                      ▼                                          │
+│           ┌──────────────────────┐                              │
+│           │     PostgreSQL       │                              │
+│           │     (Database)       │                              │
+│           └──────────────────────┘                              │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
 ## Ports
 
-| Protocol | Port | Description |
-|----------|------|-------------|
-| HTTP | 8001 | REST API for frontend communication |
-| gRPC | 9001 | Inter-service communication |
+┌───────────────────────────────────────────────────────┐
+| Protocol | Port | Description                         |
+|──────────|──────|─────────────────────────────────────|
+| HTTP     | 8001 | REST API for frontend communication |
+| gRPC     | 9001 | Inter-service communication         |
+└───────────────────────────────────────────────────────┘
 
 ## API Endpoints
 
@@ -100,11 +102,13 @@ Response: Created product object
 
 The service implements the `ProductService` defined in `proto/products/products.proto`:
 
-| Method | Request | Response | Description |
-|--------|---------|----------|-------------|
-| `GetProduct` | `GetProductRequest` | `GetProductResponse` | Get a single product by ID |
-| `ListProducts` | `ListProductsRequest` | `ListProductsResponse` | Get all products |
-| `CreateProduct` | `CreateProductRequest` | `CreateProductResponse` | Create a new product |
+┌─────────────────────────────────────────────────────────────────────────────────────────────────┐
+| Method          | Request                | Response                | Description                |
+|─────────────────|────────────────────────|─────────────────────────|────────────────────────────|
+| `GetProduct`    | `GetProductRequest`    | `GetProductResponse`    | Get a single product by ID |
+| `ListProducts`  | `ListProductsRequest`  | `ListProductsResponse`  | Get all products           |
+| `CreateProduct` | `CreateProductRequest` | `CreateProductResponse` | Create a new product       |
+└─────────────────────────────────────────────────────────────────────────────────────────────────┘
 
 ## Project Structure
 
@@ -129,15 +133,17 @@ services/products/
 
 The service is configured via environment variables:
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `PORT` | 8001 | HTTP server port |
-| `GRPC_PORT` | 9001 | gRPC server port |
-| `DB_HOST` | (required) | PostgreSQL host |
-| `DB_PORT` | (required) | PostgreSQL port |
-| `DB_NAME` | inventory_db | Database name |
-| `DB_USER` | (required) | Database username |
-| `DB_PASSWORD` | (required) | Database password |
+┌─────────────────────────────────────────────────────────────────────────────────┐
+| Variable              | Default                | Description                    |
+|───────────────────────|────────────────────────|────────────────────────────────|
+| `PORT`                | 8001                   | HTTP server port               | 
+| `GRPC_PORT`           | 9001                   | gRPC server port               |
+| `DB_HOST`             | (required)             | PostgreSQL host                |
+| `DB_PORT`             | (required)             | PostgreSQL port                |
+| `DB_NAME`             | inventory_db           | Database name                  |
+| `DB_USER`             | (required)             | Database username              |
+| `DB_PASSWORD`         | (required)             | Database password              |
+└─────────────────────────────────────────────────────────────────────────────────┘
 
 ## Running Locally
 

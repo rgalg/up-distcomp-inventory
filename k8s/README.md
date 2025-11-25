@@ -6,32 +6,32 @@ This directory contains all Kubernetes manifests for deploying the Inventory Man
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────────────────┐
-│                                    Kind Cluster                                              │
-│                              (inventory-cluster)                                             │
+│                                    Kind Cluster                                             │
+│                              (inventory-cluster)                                            │
 ├─────────────────────────────────────────────────────────────────────────────────────────────┤
-│                                                                                              │
+│                                                                                             │
 │  ┌────────────────────────────────────────────────────────────────────────────────────────┐ │
-│  │                             Namespace: inventory-system                                 │ │
+│  │                             Namespace: inventory-system                                │ │
 │  └────────────────────────────────────────────────────────────────────────────────────────┘ │
-│                                                                                              │
+│                                                                                             │
 │  ┌──────────────────────────────────────────────────────────────────────────────────────┐   │
-│  │                              External Access Layer                                    │   │
-│  │                                                                                        │   │
+│  │                              External Access Layer                                   │   │
+│  │                                                                                      │   │
 │  │   ┌─────────────────────────────┐    ┌──────────────────────────────────────────┐    │   │
-│  │   │     Frontend Service        │    │         Grafana Service                   │    │   │
-│  │   │     (LoadBalancer)          │    │         (LoadBalancer)                    │    │   │
-│  │   │                             │    │                                           │    │   │
+│  │   │     Frontend Service        │    │         Grafana Service                  │    │   │
+│  │   │     (LoadBalancer)          │    │         (LoadBalancer)                   │    │   │
+│  │   │                             │    │                                          │    │   │
 │  │   │  ┌───────────────────────┐  │    │  ┌─────────────────────────────────────┐ │    │   │
 │  │   │  │  Port: 80 → :30000    │  │    │  │  Port: 3000 → :30300                │ │    │   │
 │  │   │  │  Host: localhost:3000 │  │    │  │  Host: localhost:3001               │ │    │   │
 │  │   │  └───────────────────────┘  │    │  │  (Load testing dashboards)          │ │    │   │
 │  │   └─────────────────────────────┘    │  └─────────────────────────────────────┘ │    │   │
-│  │                                       └──────────────────────────────────────────┘    │   │
+│  │                                      └──────────────────────────────────────────┘    │   │
 │  └──────────────────────────────────────────────────────────────────────────────────────┘   │
-│                                                                                              │
+│                                                                                             │
 │  ┌──────────────────────────────────────────────────────────────────────────────────────┐   │
-│  │                              Application Services Layer                               │   │
-│  │                                                                                        │   │
+│  │                             Application Services Layer                               │   │
+│  │                                                                                      │   │
 │  │   ┌─────────────────────┐  ┌─────────────────────┐  ┌─────────────────────┐          │   │
 │  │   │  Products Service   │  │  Inventory Service  │  │   Orders Service    │          │   │
 │  │   │    (ClusterIP)      │  │    (ClusterIP)      │  │    (ClusterIP)      │          │   │
@@ -42,32 +42,32 @@ This directory contains all Kubernetes manifests for deploying the Inventory Man
 │  │   │  HPA: 1-5 replicas  │  │  HPA: 1-5 replicas  │  │  HPA: 1-5 replicas  │          │   │
 │  │   │  CPU Target: 70%    │  │  CPU Target: 70%    │  │  CPU Target: 70%    │          │   │
 │  │   └─────────────────────┘  └─────────────────────┘  └─────────────────────┘          │   │
-│  │              │                        │                        │                      │   │
-│  │              └────────────────────────┼────────────────────────┘                      │   │
-│  │                                       │                                               │   │
-│  │                                       ▼                                               │   │
+│  │              │                        │                        │                     │   │
+│  │              └────────────────────────┼────────────────────────┘                     │   │
+│  │                                       │                                              │   │
+│  │                                       ▼                                              │   │
 │  │   ┌──────────────────────────────────────────────────────────────────────────────┐   │   │
-│  │   │                              PostgreSQL                                       │   │   │
-│  │   │                              (ClusterIP)                                      │   │   │
-│  │   │                                                                               │   │   │
-│  │   │   Service: postgres:5432                                                      │   │   │
+│  │   │                              PostgreSQL                                      │   │   │
+│  │   │                              (ClusterIP)                                     │   │   │
+│  │   │                                                                              │   │   │
+│  │   │   Service: postgres:5432                                                     │   │   │
 │  │   │   Storage: PersistentVolumeClaim (1Gi)                                       │   │   │
-│  │   │                                                                               │   │   │
+│  │   │                                                                              │   │   │
 │  │   └──────────────────────────────────────────────────────────────────────────────┘   │   │
 │  └──────────────────────────────────────────────────────────────────────────────────────┘   │
-│                                                                                              │
+│                                                                                             │
 │  ┌──────────────────────────────────────────────────────────────────────────────────────┐   │
-│  │                             Load Testing Infrastructure                               │   │
-│  │                                  (Optional)                                           │   │
-│  │                                                                                        │   │
+│  │                             Load Testing Infrastructure                              │   │
+│  │                                  (Optional)                                          │   │
+│  │                                                                                      │   │
 │  │   ┌─────────────────────┐  ┌─────────────────────┐  ┌─────────────────────┐          │   │
 │  │   │      InfluxDB       │  │       Grafana       │  │     K6 Jobs         │          │   │
 │  │   │    (ClusterIP)      │  │    (LoadBalancer)   │  │    (Batch Jobs)     │          │   │
 │  │   │    Port: 8086       │  │    Port: 3000       │  │                     │          │   │
 │  │   └─────────────────────┘  └─────────────────────┘  └─────────────────────┘          │   │
-│  │                                                                                        │   │
+│  │                                                                                      │   │
 │  └──────────────────────────────────────────────────────────────────────────────────────┘   │
-│                                                                                              │
+│                                                                                             │
 └─────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -75,15 +75,15 @@ This directory contains all Kubernetes manifests for deploying the Inventory Man
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────────────────┐
-│                              Service Communication Flow                                      │
+│                              Service Communication Flow                                     │
 ├─────────────────────────────────────────────────────────────────────────────────────────────┤
-│                                                                                              │
-│                                                                                              │
+│                                                                                             │
+│                                                                                             │
 │    External                    ┌─────────────────────────────────────────────────────┐      │
-│    Request     ──────────────► │                    Frontend                          │      │
-│    (:3000)                     │                 (NGINX Container)                    │      │
+│    Request     ──────────────► │                    Frontend                         │      │
+│    (:3000)                     │                 (NGINX Container)                   │      │
 │                                └─────────────────────────┬───────────────────────────┘      │
-│                                                          │                                   │
+│                                                          │                                  │
 │                                        NGINX Reverse Proxy (HTTP)                           │
 │                                ┌─────────────────────────┼───────────────────────────┐      │
 │                                │                         │                           │      │
@@ -92,9 +92,9 @@ This directory contains all Kubernetes manifests for deploying the Inventory Man
 │                   │  products-service    │  │  inventory-service   │  │  orders-service  │  │
 │                   │       :8001          │  │       :8002          │  │       :8003      │  │
 │                   └──────────────────────┘  └──────────────────────┘  └────────┬─────────┘  │
-│                              │                         │                        │            │
-│                              └─────────────────────────┼────────────────────────┘            │
-│                                                        │                                     │
+│                              │                         │                       │            │
+│                              └─────────────────────────┼───────────────────────┘            │
+│                                                        │                                    │
 │                    ┌───────────────────────────────────┼────────────────────────────────┐   │
 │                    │                                   │                                │   │
 │                    │                   gRPC Inter-Service Communication                 │   │
@@ -107,9 +107,9 @@ This directory contains all Kubernetes manifests for deploying the Inventory Man
 │                    │   products-service:9001   inventory-service:9002                   │   │
 │                    │                                                                    │   │
 │                    └────────────────────────────────────────────────────────────────────┘   │
-│                                                                                              │
-│                                           │                                                  │
-│                                           ▼                                                  │
+│                                                                                             │
+│                                           │                                                 │
+│                                           ▼                                                 │
 │                              ┌──────────────────────────┐                                   │
 │                              │        PostgreSQL        │                                   │
 │                              │     postgres:5432        │                                   │
@@ -119,7 +119,7 @@ This directory contains all Kubernetes manifests for deploying the Inventory Man
 │                              │  • orders table          │                                   │
 │                              │  • order_items table     │                                   │
 │                              └──────────────────────────┘                                   │
-│                                                                                              │
+│                                                                                             │
 └─────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -129,79 +129,83 @@ All services use Kubernetes DNS for service discovery:
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────────────────┐
-│                               Kubernetes DNS Names                                           │
+│                               Kubernetes DNS Names                                          │
 ├─────────────────────────────────────────────────────────────────────────────────────────────┤
-│                                                                                              │
+│                                                                                             │
 │   Service Name              Full DNS Name                                  Type             │
-│   ─────────────────────────────────────────────────────────────────────────────────         │
-│                                                                                              │
+│   ──────────────────────────────────────────────────────────────────────────────────────────│
+│                                                                                             │
 │   products-service          products-service.inventory-system.svc.cluster.local:8001        │
 │   products-service          products-service.inventory-system.svc.cluster.local:9001 (gRPC) │
-│                                                                                              │
+│                                                                                             │
 │   inventory-service         inventory-service.inventory-system.svc.cluster.local:8002       │
 │   inventory-service         inventory-service.inventory-system.svc.cluster.local:9002 (gRPC)│
-│                                                                                              │
+│                                                                                             │
 │   orders-service            orders-service.inventory-system.svc.cluster.local:8003          │
 │   orders-service            orders-service.inventory-system.svc.cluster.local:9003 (gRPC)   │
-│                                                                                              │
+│                                                                                             │
 │   postgres                  postgres.inventory-system.svc.cluster.local:5432                │
-│                                                                                              │
+│                                                                                             │
 │   frontend                  frontend.inventory-system.svc.cluster.local:80                  │
-│                                                                                              │
+│                                                                                             │
 │   influxdb (optional)       influxdb.inventory-system.svc.cluster.local:8086                │
 │   grafana (optional)        grafana.inventory-system.svc.cluster.local:3000                 │
-│                                                                                              │
+│                                                                                             │
 └─────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ## Manifest Files
 
-| File | Description |
-|------|-------------|
-| `namespace.yaml` | Creates the `inventory-system` namespace |
-| `postgres-deployment.yaml` | PostgreSQL deployment, service, and PVC |
-| `postgres-init-job.yaml` | Job to initialize database schema |
-| `postgres-config-generated.yaml.template` | Template for database configuration |
-| `products-deployment.yaml` | Products service deployment and service |
-| `inventory-deployment.yaml` | Inventory service deployment and service |
-| `orders-deployment.yaml` | Orders service deployment and service |
-| `frontend-deployment.yaml` | Frontend deployment and LoadBalancer service |
-| `hpa.yaml` | Horizontal Pod Autoscalers for all backend services |
+┌─────────────────────────────────────────────────────────────────────────────────────────────────┐
+| File                                      | Description                                         |
+|───────────────────────────────────────────|─────────────────────────────────────────────────────|
+| `namespace.yaml`                          | Creates the `inventory-system` namespace            |
+| `postgres-deployment.yaml`                | PostgreSQL deployment, service, and PVC             |
+| `postgres-init-job.yaml`                  | Job to initialize database schema                   |
+| `postgres-config-generated.yaml.template` | Template for database configuration                 |
+| `products-deployment.yaml`                | Products service deployment and service             |
+| `inventory-deployment.yaml`               | Inventory service deployment and service            |
+| `orders-deployment.yaml`                  | Orders service deployment and service               |
+| `frontend-deployment.yaml`                | Frontend deployment and LoadBalancer service        |
+| `hpa.yaml`                                | Horizontal Pod Autoscalers for all backend services |
+└─────────────────────────────────────────────────────────────────────────────────────────────────┘
 
 ### Configuration Scripts
 
-| Script | Description |
-|--------|-------------|
+┌──────────────────────────────────────────────────────────────────────────────────┐
+| Script                               | Description                               |
+|──────────────────────────────────────|───────────────────────────────────────────|
 | `postgres-create-config-from-env.sh` | Generates ConfigMap/Secret from .env file |
-| `postgres-create-init-configmap.sh` | Creates ConfigMap from SQL schema |
-| `delete-generated-files.sh` | Removes generated configuration files |
+| `postgres-create-init-configmap.sh`  | Creates ConfigMap from SQL schema         |
+| `delete-generated-files.sh`          | Removes generated configuration files     |
+└──────────────────────────────────────────────────────────────────────────────────┘
 
 ## Service Types
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────────────────┐
-│                                   Service Types                                              │
+│                                   Service Types                                             │
 ├─────────────────────────────────────────────────────────────────────────────────────────────┤
-│                                                                                              │
-│   LoadBalancer Services (External Access)                                                    │
+│                                                                                             │
+│   LoadBalancer Services (External Access)                                                   │
 │   ════════════════════════════════════════                                                  │
-│                                                                                              │
+│                                                                                             │
 │   ┌─────────────────────────────────────────────────────────────────────────────────────┐   │
 │   │  Frontend          │  NodePort: 30000  │  Host: localhost:3000  │  External Access  │   │
 │   │  Grafana           │  NodePort: 30300  │  Host: localhost:3001  │  Load Testing     │   │
 │   └─────────────────────────────────────────────────────────────────────────────────────┘   │
-│                                                                                              │
-│   ClusterIP Services (Internal Only)                                                         │
+│                                                                                             │
+│   ClusterIP Services (Internal Only)                                                        │
 │   ═══════════════════════════════════                                                       │
-│                                                                                              │
+│                                                                                             │
 │   ┌─────────────────────────────────────────────────────────────────────────────────────┐   │
 │   │  products-service   │  HTTP: 8001, gRPC: 9001  │  Backend microservice              │   │
 │   │  inventory-service  │  HTTP: 8002, gRPC: 9002  │  Backend microservice              │   │
 │   │  orders-service     │  HTTP: 8003, gRPC: 9003  │  Backend microservice              │   │
 │   │  postgres           │  Port: 5432              │  Database                          │   │
-│   │  influxdb           │  Port: 8086              │  Metrics storage (load testing)   │   │
+│   │  influxdb           │  Port: 8086              │  Metrics storage (load testing)    │   │
 │   └─────────────────────────────────────────────────────────────────────────────────────┘   │
-│                                                                                              │
+│                                                                                             │
 └─────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -209,27 +213,27 @@ All services use Kubernetes DNS for service discovery:
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────────────────┐
-│                              Horizontal Pod Autoscaler Configuration                         │
+│                              Horizontal Pod Autoscaler Configuration                        │
 ├─────────────────────────────────────────────────────────────────────────────────────────────┤
-│                                                                                              │
+│                                                                                             │
 │   Service               Min Replicas    Max Replicas    CPU Target    Scale Up/Down         │
 │   ──────────────────────────────────────────────────────────────────────────────────────    │
 │   products-service            1              5             70%         30s / 60s            │
 │   inventory-service           1              5             70%         30s / 60s            │
 │   orders-service              1              5             70%         30s / 60s            │
-│                                                                                              │
-│   Scale Up Behavior:                                                                         │
+│                                                                                             │
+│   Scale Up Behavior:                                                                        │
 │   ─────────────────────────────────────────────────────────────────────────                 │
 │   • Can double pods every 30 seconds when CPU > 70%                                         │
-│   • Stabilization window: 30 seconds                                                         │
-│                                                                                              │
-│   Scale Down Behavior:                                                                       │
+│   • Stabilization window: 30 seconds                                                        │
+│                                                                                             │
+│   Scale Down Behavior:                                                                      │
 │   ─────────────────────────────────────────────────────────────────────────                 │
 │   • Reduces pods by 50% every 30 seconds when CPU < 70%                                     │
-│   • Stabilization window: 60 seconds (prevents flapping)                                     │
-│                                                                                              │
-│                           HPA Scaling Visualization                                          │
-│                                                                                              │
+│   • Stabilization window: 60 seconds (prevents flapping)                                    │
+│                                                                                             │
+│                           HPA Scaling Visualization                                         │
+│                                                                                             │
 │        ┌────────────────────────────────────────────────────────────────┐                   │
 │   Load │                         ╱╲    ╱╲                               │                   │
 │        │                        ╱  ╲  ╱  ╲                              │                   │
@@ -237,8 +241,8 @@ All services use Kubernetes DNS for service discovery:
 │        │      ╱  ╲            ╱            ╲                            │                   │
 │        │─────╱────╲──────────╱──────────────╲─────────────────────────  │                   │
 │        └────────────────────────────────────────────────────────────────┘                   │
-│                                         Time                                                 │
-│                                                                                              │
+│                                         Time                                                │
+│                                                                                             │
 │        ┌────────────────────────────────────────────────────────────────┐                   │
 │   Pods │               ┌──────────────────┐                             │                   │
 │    5   │               │                  │                             │                   │
@@ -247,8 +251,8 @@ All services use Kubernetes DNS for service discovery:
 │    2   │      ┌──┘                              └──┐                    │                   │
 │    1   │──────┘                                    └────────────────────│                   │
 │        └────────────────────────────────────────────────────────────────┘                   │
-│                                         Time                                                 │
-│                                                                                              │
+│                                         Time                                                │
+│                                                                                             │
 └─────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -278,9 +282,9 @@ PostgreSQL uses `pg_isready` command for health checks.
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────────────────┐
-│                                Resource Configuration                                        │
+│                                Resource Configuration                                       │
 ├─────────────────────────────────────────────────────────────────────────────────────────────┤
-│                                                                                              │
+│                                                                                             │
 │   Service               CPU Request    CPU Limit    Memory Request    Memory Limit          │
 │   ──────────────────────────────────────────────────────────────────────────────────────    │
 │   products-service        100m          500m          128Mi            512Mi                │
@@ -288,7 +292,7 @@ PostgreSQL uses `pg_isready` command for health checks.
 │   orders-service          100m          500m          128Mi            512Mi                │
 │   grafana (optional)      100m          500m          256Mi            512Mi                │
 │   influxdb (optional)     100m          500m          256Mi            1Gi                  │
-│                                                                                              │
+│                                                                                             │
 └─────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -296,26 +300,26 @@ PostgreSQL uses `pg_isready` command for health checks.
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────────────────┐
-│                              Configuration Management                                        │
+│                              Configuration Management                                       │
 ├─────────────────────────────────────────────────────────────────────────────────────────────┤
-│                                                                                              │
-│   ConfigMaps                                                                                 │
+│                                                                                             │
+│   ConfigMaps                                                                                │
 │   ──────────────────────────────────────────────────────────────────────────────────────    │
-│                                                                                              │
-│   ┌─────────────────────┬─────────────────────────────────────────────────────────────┐    │
-│   │  postgres-config    │  Database connection settings (host, port, name, user)      │    │
-│   │  postgres-init-sql  │  SQL schema for database initialization                     │    │
-│   │  k6-scripts         │  Load testing scripts (optional)                            │    │
-│   │  grafana-*          │  Grafana datasources and dashboards (optional)              │    │
-│   └─────────────────────┴─────────────────────────────────────────────────────────────┘    │
-│                                                                                              │
-│   Secrets                                                                                    │
+│                                                                                             │
+│   ┌─────────────────────┬─────────────────────────────────────────────────────────────┐     │
+│   │  postgres-config    │  Database connection settings (host, port, name, user)      │     │
+│   │  postgres-init-sql  │  SQL schema for database initialization                     │     │
+│   │  k6-scripts         │  Load testing scripts (optional)                            │     │
+│   │  grafana-*          │  Grafana datasources and dashboards (optional)              │     │
+│   └─────────────────────┴─────────────────────────────────────────────────────────────┘     │
+│                                                                                             │
+│   Secrets                                                                                   │
 │   ──────────────────────────────────────────────────────────────────────────────────────    │
-│                                                                                              │
-│   ┌─────────────────────┬─────────────────────────────────────────────────────────────┐    │
-│   │  postgres-secret    │  Database password (base64 encoded)                         │    │
-│   └─────────────────────┴─────────────────────────────────────────────────────────────┘    │
-│                                                                                              │
+│                                                                                             │
+│   ┌─────────────────────┬─────────────────────────────────────────────────────────────┐     │
+│   │  postgres-secret    │  Database password (base64 encoded)                         │     │
+│   └─────────────────────┴─────────────────────────────────────────────────────────────┘     │
+│                                                                                             │
 └─────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -323,35 +327,35 @@ PostgreSQL uses `pg_isready` command for health checks.
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────────────────┐
-│                              Deployment Sequence                                             │
+│                              Deployment Sequence                                            │
 ├─────────────────────────────────────────────────────────────────────────────────────────────┤
-│                                                                                              │
-│   1. Namespace                                                                               │
+│                                                                                             │
+│   1. Namespace                                                                              │
 │      └──► kubectl apply -f namespace.yaml                                                   │
-│                                                                                              │
-│   2. Configuration                                                                           │
+│                                                                                             │
+│   2. Configuration                                                                          │
 │      └──► postgres-create-config-from-env.sh                                                │
 │      └──► kubectl apply -f postgres-config-generated.yaml                                   │
 │      └──► postgres-create-init-configmap.sh                                                 │
-│                                                                                              │
-│   3. Database                                                                                │
+│                                                                                             │
+│   3. Database                                                                               │
 │      └──► kubectl apply -f postgres-deployment.yaml                                         │
 │      └──► wait for postgres to be ready                                                     │
 │      └──► kubectl apply -f postgres-init-job.yaml                                           │
 │      └──► wait for init job to complete                                                     │
-│                                                                                              │
-│   4. Backend Services                                                                        │
+│                                                                                             │
+│   4. Backend Services                                                                       │
 │      └──► kubectl apply -f products-deployment.yaml                                         │
 │      └──► kubectl apply -f inventory-deployment.yaml                                        │
 │      └──► kubectl apply -f orders-deployment.yaml                                           │
 │      └──► wait for deployments to be ready                                                  │
-│                                                                                              │
-│   5. Frontend                                                                                │
+│                                                                                             │
+│   5. Frontend                                                                               │
 │      └──► kubectl apply -f frontend-deployment.yaml                                         │
-│                                                                                              │
-│   6. Autoscaling                                                                             │
+│                                                                                             │
+│   6. Autoscaling                                                                            │
 │      └──► kubectl apply -f hpa.yaml                                                         │
-│                                                                                              │
+│                                                                                             │
 └─────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 

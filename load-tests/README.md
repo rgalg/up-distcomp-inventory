@@ -6,46 +6,46 @@ This directory contains load testing infrastructure for the Inventory Management
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────────────────┐
-│                            Load Testing Approaches                                           │
+│                            Load Testing Approaches                                          │
 ├─────────────────────────────────────────────────────────────────────────────────────────────┤
-│                                                                                              │
+│                                                                                             │
 │   ┌─────────────────────────────────────────────────────────────────────────────────────┐   │
-│   │  Option 1: Port-Forward Testing (Local K6)                                           │   │
+│   │  Option 1: Port-Forward Testing (Local K6)                                          │   │
 │   │  ══════════════════════════════════════════                                         │   │
-│   │                                                                                      │   │
-│   │   ┌──────────┐        kubectl         ┌─────────────────────────────────────────┐   │   │
-│   │   │ Local K6 │ ────► port-forward ────►│          Kubernetes Cluster            │   │   │
-│   │   │ (~15-20  │                         │    (products, inventory, orders)       │   │   │
-│   │   │  req/s)  │                         │                                         │   │   │
-│   │   └──────────┘                         └─────────────────────────────────────────┘   │   │
-│   │                                                                                      │   │
+│   │                                                                                     │   │
+│   │   ┌──────────┐        kubectl          ┌─────────────────────────────────────────┐  │   │
+│   │   │ Local K6 │ ────► port-forward ────►│          Kubernetes Cluster             │  │   │
+│   │   │ (~15-20  │                         │    (products, inventory, orders)        │  │   │
+│   │   │  req/s)  │                         │                                         │  │   │
+│   │   └──────────┘                         └─────────────────────────────────────────┘  │   │
+│   │                                                                                     │   │
 │   │   Best for: Quick smoke tests, debugging, development                               │   │
 │   └─────────────────────────────────────────────────────────────────────────────────────┘   │
-│                                                                                              │
+│                                                                                             │
 │   ┌─────────────────────────────────────────────────────────────────────────────────────┐   │
 │   │  Option 2: In-Cluster Testing (K6 as Kubernetes Job)                                │   │
 │   │  ═══════════════════════════════════════════════════                                │   │
-│   │                                                                                      │   │
+│   │                                                                                     │   │
 │   │   ┌─────────────────────────────────────────────────────────────────────────────┐   │   │
-│   │   │                         Kubernetes Cluster                                   │   │   │
-│   │   │                                                                              │   │   │
+│   │   │                         Kubernetes Cluster                                  │   │   │
+│   │   │                                                                             │   │   │
 │   │   │   ┌──────────────┐    Internal DNS    ┌────────────────────────────────┐    │   │   │
-│   │   │   │   K6 Job     │ ──────────────────►│  Application Services           │    │   │   │
-│   │   │   │  (100+ req/s)│                    │  (products, inventory, orders)  │    │   │   │
+│   │   │   │   K6 Job     │ ──────────────────►│  Application Services          │    │   │   │
+│   │   │   │  (100+ req/s)│                    │  (products, inventory, orders) │    │   │   │
 │   │   │   └──────────────┘                    └────────────────────────────────┘    │   │   │
-│   │   │                                                                              │   │   │
+│   │   │                                                                             │   │   │
 │   │   └─────────────────────────────────────────────────────────────────────────────┘   │   │
-│   │                                                                                      │   │
+│   │                                                                                     │   │
 │   │   Best for: High-load testing, HPA testing, realistic performance measurements      │   │
 │   └─────────────────────────────────────────────────────────────────────────────────────┘   │
-│                                                                                              │
+│                                                                                             │
 │   ┌─────────────────────────────────────────────────────────────────────────────────────┐   │
 │   │  Option 3: Grafana-Based Testing (K6 + InfluxDB + Grafana)                          │   │
 │   │  ═════════════════════════════════════════════════════════                          │   │
-│   │                                                                                      │   │
+│   │                                                                                     │   │
 │   │   ┌─────────────────────────────────────────────────────────────────────────────┐   │   │
-│   │   │                         Kubernetes Cluster                                   │   │   │
-│   │   │                                                                              │   │   │
+│   │   │                         Kubernetes Cluster                                  │   │   │
+│   │   │                                                                             │   │   │
 │   │   │   ┌──────────┐   metrics   ┌──────────┐   query   ┌─────────────────────┐   │   │   │
 │   │   │   │  K6 Job  │ ───────────►│ InfluxDB │◄──────────│     Grafana         │   │   │   │
 │   │   │   │          │             │          │           │  localhost:3001     │   │   │   │
@@ -61,10 +61,10 @@ This directory contains load testing infrastructure for the Inventory Management
 │   │   └──────────────────────────────────────────────────────────────│──────────────┘   │   │
 │   │                                                                  │                  │   │
 │   │                                               http://localhost:3001                 │   │
-│   │                                                                                      │   │
+│   │                                                                                     │   │
 │   │   Best for: Real-time visualization, performance monitoring, team collaboration     │   │
 │   └─────────────────────────────────────────────────────────────────────────────────────┘   │
-│                                                                                              │
+│                                                                                             │
 └─────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -72,11 +72,13 @@ This directory contains load testing infrastructure for the Inventory Management
 
 This project supports three testing approaches for K6 load testing:
 
-| Approach | Best For | Max Throughput | Setup Complexity | Real-time Monitoring |
-|----------|----------|----------------|------------------|---------------------|
-| **Port-Forward** | Quick smoke tests, debugging | ~15-20 req/s | Low (local K6) | No |
-| **In-Cluster** | High-load testing, HPA testing | 100+ req/s | Medium (K8s jobs) | No |
-| **Grafana** | Load testing with dashboards | 100+ req/s | Medium (K8s deploy) | Yes ✓ |
+┌─────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+| Approach         | Best For                       | Max Throughput | Setup Complexity    | Real-time Monitoring |
+|──────────────────|────────────────────────────────|────────────────|─────────────────────|──────────────────────|
+| **Port-Forward** | Quick smoke tests, debugging   | ~15-20 req/s   | Low (local K6)      | No                   |
+| **In-Cluster**   | High-load testing, HPA testing | 100+ req/s     | Medium (K8s jobs)   | No                   |
+| **Grafana**      | Load testing with dashboards   | 100+ req/s     | Medium (K8s deploy) | Yes                  |
+└─────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 
 ### Port-Forward Limitations
 
@@ -243,10 +245,10 @@ The Grafana-based approach deploys InfluxDB and Grafana to Kubernetes, allowing 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
 │                         Kubernetes Cluster                          │
-│  ┌─────────────┐    ┌─────────────┐    ┌─────────────────────────┐ │
-│  │   K6 Job    │───▶│  InfluxDB   │◀───│        Grafana          │ │
-│  │ (Load Test) │    │  (Metrics)  │    │ (Dashboard @ :3001)    │ │
-│  └─────────────┘    └─────────────┘    └─────────────────────────┘ │
+│  ┌─────────────┐     ┌─────────────┐     ┌─────────────────────────┐│
+│  │   K6 Job    │───▶│  InfluxDB   │◀───│        Grafana          ││
+│  │ (Load Test) │     │  (Metrics)  │     │ (Dashboard @ :3001)     ││
+│  └─────────────┘     └─────────────┘     └─────────────────────────┘│
 │         │                                          ▲                │
 │         ▼                                          │                │
 │  ┌─────────────────────────────────────────┐       │                │
@@ -342,32 +344,38 @@ The auto-provisioned K6 dashboard provides:
 
 The Grafana-based testing deploys the following components:
 
-| Component | Service Type | Port | Purpose |
-|-----------|-------------|------|---------|
-| InfluxDB | ClusterIP | 8086 | Time-series metrics storage |
-| Grafana | LoadBalancer | 3001 | Dashboard visualization |
+┌───────────────────────────────────────────────────────────────┐
+| Component | Service Type | Port | Purpose                     |
+|───────────|──────────────|──────|─────────────────────────────|
+| InfluxDB  | ClusterIP    | 8086 | Time-series metrics storage |
+| Grafana   | LoadBalancer | 3001 | Dashboard visualization     |
+└───────────────────────────────────────────────────────────────┘
 
 ### Kubernetes Manifests
 
 Located in `k8s/grafana/`:
 
-| File | Purpose |
-|------|---------|
-| `influxdb-deployment.yaml` | InfluxDB deployment and service |
-| `grafana-configmaps.yaml` | Grafana datasources, dashboard provider, and K6 dashboard |
-| `grafana-deployment.yaml` | Grafana deployment and LoadBalancer service |
-| `k6-grafana-job.yaml` | K6 job templates with InfluxDB output |
+┌────────────────────────────────────────────────────────────────────────────────────────┐
+| File                       | Purpose                                                   |
+|────────────────────────────|───────────────────────────────────────────────────────────|
+| `influxdb-deployment.yaml` | InfluxDB deployment and service                           |
+| `grafana-configmaps.yaml`  | Grafana datasources, dashboard provider, and K6 dashboard |
+| `grafana-deployment.yaml`  | Grafana deployment and LoadBalancer service               |
+| `k6-grafana-job.yaml`      | K6 job templates with InfluxDB output                     |
+└────────────────────────────────────────────────────────────────────────────────────────┘
 
 ## High-Load Test Configurations
 
 High-load tests are designed to stress the system and trigger HPA scaling.
 
-| Test | Target Rate | Duration | Expected Behavior |
-|------|-------------|----------|-------------------|
-| products-high | 100 req/s | ~10 min | Should trigger HPA at ~60 req/s |
-| inventory-high | 80 req/s | ~10 min | Should trigger HPA at ~50 req/s |
-| orders-high | 50 req/s | ~10 min | Slower due to gRPC calls |
-| full-high | 180 req/s combined | ~10 min | Multi-scenario realistic load |
+┌──────────────────────────────────────────────────────────────────────────────────┐
+| Test           | Target Rate        | Duration | Expected Behavior               |
+|────────────────|────────────────────|──────────|─────────────────────────────────|
+| products-high  | 100 req/s          | ~10 min  | Should trigger HPA at ~60 req/s |
+| inventory-high | 80 req/s           | ~10 min  | Should trigger HPA at ~50 req/s |
+| orders-high    | 50 req/s           | ~10 min  | Slower due to gRPC calls        |
+| full-high      | 180 req/s combined | ~10 min  | Multi-scenario realistic load   |
+└──────────────────────────────────────────────────────────────────────────────────┘
 
 ### Running High-Load Tests
 
@@ -384,10 +392,12 @@ watch -n 2 'kubectl get hpa,pods -n inventory-system'
 
 High-load tests require more resources:
 
+┌──────────────────────────────────────────┐
 | Test Type | CPU Request | Memory Request |
-|-----------|-------------|----------------|
-| Standard | 200m | 256Mi |
-| High-Load | 300m | 384Mi |
+|───────────|─────────────|────────────────|
+| Standard  | 200m        | 256Mi          |
+| High-Load | 300m        | 384Mi          |
+└──────────────────────────────────────────┘
 
 ## Test Scripts Available
 
@@ -395,36 +405,42 @@ High-load tests require more resources:
 
 Located in `scripts/`:
 
-| Script | Rate | Duration | Purpose |
-|--------|------|----------|---------|
-| smoke-test.js | 5 req/s | 30s | Quick verification |
-| products-service-test.js | 5-15 req/s | 3.5m | Products API test |
-| inventory-service-test.js | 3-10 req/s | 3.5m | Inventory API test |
-| orders-service-test.js | 2-8 req/s | 3.5m | Orders API test |
-| full-scenario-test.js | 5-30 req/s | 8m | Full user journey |
+┌────────────────────────────────────────────────────────────────────────┐
+| Script                    | Rate       | Duration | Purpose            |
+|───────────────────────────|────────────|──────────|────────────────────|
+| smoke-test.js             | 5 req/s    | 30s      | Quick verification |
+| products-service-test.js  | 5-15 req/s | 3.5m     | Products API test  |
+| inventory-service-test.js | 3-10 req/s | 3.5m     | Inventory API test |
+| orders-service-test.js    | 2-8 req/s  | 3.5m     | Orders API test    |
+| full-scenario-test.js     | 5-30 req/s | 8m       | Full user journey  |
+└────────────────────────────────────────────────────────────────────────┘
 
 ### In-Cluster Tests (Higher Rates)
 
 Located in `k8s/k6-configmap.yaml`:
 
-| Script | Rate | Purpose |
-|--------|------|---------|
-| smoke-test.js | 10 req/s | Quick in-cluster verification |
-| products-service-test.js | 10-50 req/s | Products load test |
-| inventory-service-test.js | 10-40 req/s | Inventory load test |
-| orders-service-test.js | 5-20 req/s | Orders load test |
-| full-scenario-test.js | 5-30 req/s | Full journey test |
+┌─────────────────────────────────────────────────────────────────────────┐
+| Script                    | Rate        | Purpose                       |
+|───────────────────────────|─────────────|───────────────────────────────|
+| smoke-test.js             | 10 req/s    | Quick in-cluster verification |
+| products-service-test.js  | 10-50 req/s | Products load test            |
+| inventory-service-test.js | 10-40 req/s | Inventory load test           |
+| orders-service-test.js    | 5-20 req/s  | Orders load test              |
+| full-scenario-test.js     | 5-30 req/s  | Full journey test             |
+└─────────────────────────────────────────────────────────────────────────┘
 
 ### High-Load Tests
 
 Located in `k8s/high-load/`:
 
-| Script | Rate | Duration |
-|--------|------|----------|
-| products-service-test.js | 10-100 req/s | 10 min |
-| inventory-service-test.js | 10-80 req/s | 10 min |
-| orders-service-test.js | 5-50 req/s | 10 min |
-| full-scenario-test.js | Combined 180 req/s | 10 min |
+┌───────────────────────────────────────────────────────────┐
+| Script                    | Rate               | Duration |
+|───────────────────────────|────────────────────|──────────|
+| products-service-test.js  | 10-100 req/s       | 10 min   |
+| inventory-service-test.js | 10-80 req/s        | 10 min   |
+| orders-service-test.js    | 5-50 req/s         | 10 min   |
+| full-scenario-test.js     | Combined 180 req/s | 10 min   |
+└───────────────────────────────────────────────────────────┘
 
 ## Monitoring Tests
 

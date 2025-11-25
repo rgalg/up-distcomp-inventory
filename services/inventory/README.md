@@ -14,39 +14,41 @@ The Inventory Service is responsible for:
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                     Inventory Service                            │
+│                     Inventory Service                           │
 ├─────────────────────────────────────────────────────────────────┤
-│                                                                  │
+│                                                                 │
 │  ┌──────────────────┐    ┌──────────────────┐                   │
 │  │   HTTP Handler   │    │   gRPC Handler   │                   │
 │  │    (port 8002)   │    │    (port 9002)   │                   │
 │  └────────┬─────────┘    └────────┬─────────┘                   │
-│           │                       │                              │
-│           └───────────┬───────────┘                              │
-│                       ▼                                          │
-│           ┌──────────────────────┐                               │
-│           │     Controller       │                               │
-│           │  (Business Logic)    │                               │
-│           └──────────┬───────────┘                               │
-│                      ▼                                           │
-│           ┌──────────────────────┐                               │
-│           │     Repository       │                               │
-│           │   (Data Access)      │                               │
-│           └──────────┬───────────┘                               │
-│                      ▼                                           │
-│           ┌──────────────────────┐                               │
-│           │     PostgreSQL       │                               │
-│           │     (Database)       │                               │
-│           └──────────────────────┘                               │
+│           │                       │                             │
+│           └───────────┬───────────┘                             │
+│                       ▼                                         │
+│           ┌──────────────────────┐                              │
+│           │     Controller       │                              │
+│           │  (Business Logic)    │                              │
+│           └──────────┬───────────┘                              │
+│                      ▼                                          │
+│           ┌──────────────────────┐                              │
+│           │     Repository       │                              │
+│           │   (Data Access)      │                              │
+│           └──────────┬───────────┘                              │
+│                      ▼                                          │
+│           ┌──────────────────────┐                              │
+│           │     PostgreSQL       │                              │
+│           │     (Database)       │                              │
+│           └──────────────────────┘                              │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
 ## Ports
 
-| Protocol | Port | Description |
-|----------|------|-------------|
-| HTTP | 8002 | REST API for frontend communication |
-| gRPC | 9002 | Inter-service communication |
+┌───────────────────────────────────────────────────────┐
+| Protocol | Port | Description                         |
+|──────────|──────|─────────────────────────────────────|
+| HTTP     | 8002 | REST API for frontend communication |
+| gRPC     | 9002 | Inter-service communication         |
+└───────────────────────────────────────────────────────┘
 
 ## Stock Management
 
@@ -54,26 +56,26 @@ The Inventory Service implements a reservation system to prevent overselling:
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                      Stock Lifecycle                             │
+│                      Stock Lifecycle                            │
 ├─────────────────────────────────────────────────────────────────┤
-│                                                                  │
-│   Total Stock = Available + Reserved                             │
-│                                                                  │
+│                                                                 │
+│   Total Stock = Available + Reserved                            │
+│                                                                 │
 │   ┌─────────────┐    Reserve     ┌─────────────┐                │
 │   │  Available  │ ─────────────► │  Reserved   │                │
 │   │    Stock    │                │    Stock    │                │
 │   └─────────────┘                └─────────────┘                │
-│         ▲                              │                         │
-│         │                              │                         │
-│         │ Release                      │ Fulfill                 │
-│         │ Reservation                  │ Reservation             │
-│         │                              ▼                         │
+│         ▲                              │                        │
+│         │                              │                        │
+│         │ Release                      │ Fulfill                │
+│         │ Reservation                  │ Reservation            │
+│         │                              ▼                        │
 │         │                        ┌─────────────┐                │
 │         └─────────────────────── │   Shipped   │                │
 │                                  │   (Stock    │                │
 │                                  │  Deducted)  │                │
 │                                  └─────────────┘                │
-│                                                                  │
+│                                                                 │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -146,15 +148,16 @@ Response: Updated inventory item
 ### gRPC API
 
 The service implements the `InventoryService` defined in `proto/inventory/inventory.proto`:
-
-| Method | Request | Response | Description |
-|--------|---------|----------|-------------|
-| `GetInventory` | `GetInventoryRequest` | `GetInventoryResponse` | Get inventory for a product |
-| `ListInventory` | `ListInventoryRequest` | `ListInventoryResponse` | Get all inventory items |
-| `UpdateStock` | `UpdateStockRequest` | `UpdateStockResponse` | Update stock quantity |
-| `ReserveStock` | `ReserveStockRequest` | `ReserveStockResponse` | Reserve stock for an order |
-| `FulfillReservation` | `FulfillReservationRequest` | `FulfillReservationResponse` | Fulfill a reservation |
-| `ReleaseReservation` | `ReleaseReservationRequest` | `ReleaseReservationResponse` | Release a reservation |
+┌─────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+| Method               | Request                     | Response                     | Description                 |
+|──────────────────────|─────────────────────────────|──────────────────────────────|─────────────────────────────|
+| `GetInventory`       | `GetInventoryRequest`       | `GetInventoryResponse`       | Get inventory for a product |
+| `ListInventory`      | `ListInventoryRequest`      | `ListInventoryResponse`      | Get all inventory items     |
+| `UpdateStock`        | `UpdateStockRequest`        | `UpdateStockResponse`        | Update stock quantity       |
+| `ReserveStock`       | `ReserveStockRequest`       | `ReserveStockResponse`       | Reserve stock for an order  |
+| `FulfillReservation` | `FulfillReservationRequest` | `FulfillReservationResponse` | Fulfill a reservation       |
+| `ReleaseReservation` | `ReleaseReservationRequest` | `ReleaseReservationResponse` | Release a reservation       |
+└─────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 
 ## Project Structure
 
@@ -179,15 +182,17 @@ services/inventory/
 
 The service is configured via environment variables:
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `PORT` | 8002 | HTTP server port |
-| `GRPC_PORT` | 9002 | gRPC server port |
-| `DB_HOST` | (required) | PostgreSQL host |
-| `DB_PORT` | (required) | PostgreSQL port |
-| `DB_NAME` | inventory_db | Database name |
-| `DB_USER` | (required) | Database username |
-| `DB_PASSWORD` | (required) | Database password |
+┌──────────────────────────────────────────────────┐
+| Variable      | Default      | Description       |
+|───────────────|──────────────|───────────────────|
+| `PORT`        | 8002         | HTTP server port  |
+| `GRPC_PORT`   | 9002         | gRPC server port  |
+| `DB_HOST`     | (required)   | PostgreSQL host   |
+| `DB_PORT`     | (required)   | PostgreSQL port   |
+| `DB_NAME`     | inventory_db | Database name     |
+| `DB_USER`     | (required)   | Database username |
+| `DB_PASSWORD` | (required)   | Database password |
+└──────────────────────────────────────────────────┘
 
 ## Running Locally
 
@@ -255,12 +260,12 @@ The service exposes a health check endpoint at `/health` used by Kubernetes prob
 ## Integration with Other Services
 
 ```
-┌─────────────┐       gRPC         ┌───────────────────┐
-│   Orders    │◄───────────────────│ Inventory Service │
-│   Service   │ ReserveStock()     │                   │
+┌─────────────┐       gRPC          ┌───────────────────┐
+│   Orders    │◄──────────────────  │ Inventory Service │
+│   Service   │ ReserveStock()      │                   │
 │             │ FulfillReservation()│                   │
 │             │ ReleaseReservation()│                   │
-└─────────────┘                    └───────────────────┘
+└─────────────┘                     └───────────────────┘
        │
        │                           ┌───────────────────┐
        │        HTTP               │     Frontend      │

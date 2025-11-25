@@ -14,89 +14,91 @@ The Orders Service is responsible for:
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                       Orders Service                             │
+│                       Orders Service                            │
 ├─────────────────────────────────────────────────────────────────┤
-│                                                                  │
+│                                                                 │
 │  ┌──────────────────┐    ┌──────────────────┐                   │
 │  │   HTTP Handler   │    │   gRPC Handler   │                   │
 │  │    (port 8003)   │    │    (port 9003)   │                   │
 │  └────────┬─────────┘    └────────┬─────────┘                   │
-│           │                       │                              │
-│           └───────────┬───────────┘                              │
-│                       ▼                                          │
-│           ┌──────────────────────┐                               │
-│           │     Controller       │                               │
-│           │  (Business Logic)    │                               │
-│           └──────────┬───────────┘                               │
-│                      │                                           │
-│         ┌────────────┼────────────┐                              │
-│         ▼            ▼            ▼                              │
+│           │                       │                             │
+│           └───────────┬───────────┘                             │
+│                       ▼                                         │
+│           ┌──────────────────────┐                              │
+│           │     Controller       │                              │
+│           │  (Business Logic)    │                              │
+│           └──────────┬───────────┘                              │
+│                      │                                          │
+│         ┌────────────┼────────────┐                             │
+│         ▼            ▼            ▼                             │
 │   ┌───────────┐ ┌─────────┐ ┌───────────────┐                   │
 │   │ Products  │ │ Repo    │ │  Inventory    │                   │
 │   │ gRPC      │ │ (Local) │ │  gRPC Client  │                   │
 │   │ Client    │ │         │ │               │                   │
 │   └─────┬─────┘ └────┬────┘ └───────┬───────┘                   │
-│         │            │              │                            │
-│         ▼            ▼              ▼                            │
+│         │            │              │                           │
+│         ▼            ▼              ▼                           │
 │   ┌───────────┐ ┌─────────┐  ┌───────────────┐                  │
 │   │ Products  │ │PostgreSQL│  │  Inventory   │                  │
 │   │ Service   │ │ (Orders) │  │   Service    │                  │
 │   └───────────┘ └─────────┘  └───────────────┘                  │
-│                                                                  │
+│                                                                 │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
 ## Ports
 
-| Protocol | Port | Description |
-|----------|------|-------------|
-| HTTP | 8003 | REST API for frontend communication |
-| gRPC | 9003 | Inter-service communication |
+┌───────────────────────────────────────────────────────┐
+| Protocol | Port | Description                         |
+|──────────|──────|─────────────────────────────────────|
+| HTTP     | 8003 | REST API for frontend communication |
+| gRPC     | 9003 | Inter-service communication         |
+└───────────────────────────────────────────────────────┘
 
 ## Order Workflow
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                      Order Creation Flow                         │
+│                      Order Creation Flow                        │
 ├─────────────────────────────────────────────────────────────────┤
-│                                                                  │
-│  1. Client Request                                               │
-│         │                                                        │
-│         ▼                                                        │
-│  2. Validate Products ──────────► Products Service (gRPC)        │
-│         │                         - Get product details          │
-│         │                         - Get prices                   │
-│         ▼                                                        │
-│  3. Reserve Stock ──────────────► Inventory Service (gRPC)       │
-│         │                         - Reserve items                │
-│         │                         - Check availability           │
-│         ▼                                                        │
-│  4. Create Order ───────────────► PostgreSQL                     │
-│         │                         - Save order                   │
-│         │                         - Save order items             │
-│         ▼                                                        │
-│  5. Return Order (status: pending)                               │
-│                                                                  │
+│                                                                 │
+│  1. Client Request                                              │
+│         │                                                       │
+│         ▼                                                       │
+│  2. Validate Products ──────────► Products Service (gRPC)       │
+│         │                         - Get product details         │
+│         │                         - Get prices                  │
+│         ▼                                                       │
+│  3. Reserve Stock ──────────────► Inventory Service (gRPC)      │
+│         │                         - Reserve items               │
+│         │                         - Check availability          │
+│         ▼                                                       │
+│  4. Create Order ───────────────► PostgreSQL                    │
+│         │                         - Save order                  │
+│         │                         - Save order items            │
+│         ▼                                                       │
+│  5. Return Order (status: pending)                              │
+│                                                                 │
 └─────────────────────────────────────────────────────────────────┘
 
 ┌─────────────────────────────────────────────────────────────────┐
-│                     Order Fulfillment Flow                       │
+│                     Order Fulfillment Flow                      │
 ├─────────────────────────────────────────────────────────────────┤
-│                                                                  │
-│  1. Fulfill Request                                              │
-│         │                                                        │
-│         ▼                                                        │
-│  2. Get Order ──────────────────► PostgreSQL                     │
-│         │                         - Verify status: pending       │
-│         ▼                                                        │
-│  3. Fulfill Reservation ────────► Inventory Service (gRPC)       │
-│         │                         - Deduct reserved stock        │
-│         ▼                                                        │
-│  4. Update Order ───────────────► PostgreSQL                     │
-│         │                         - Set status: fulfilled        │
-│         ▼                                                        │
-│  5. Return Order (status: fulfilled)                             │
-│                                                                  │
+│                                                                 │
+│  1. Fulfill Request                                             │
+│         │                                                       │
+│         ▼                                                       │
+│  2. Get Order ──────────────────► PostgreSQL                    │
+│         │                         - Verify status: pending      │
+│         ▼                                                       │
+│  3. Fulfill Reservation ────────► Inventory Service (gRPC)      │
+│         │                         - Deduct reserved stock       │
+│         ▼                                                       │
+│  4. Update Order ───────────────► PostgreSQL                    │
+│         │                         - Set status: fulfilled       │
+│         ▼                                                       │
+│  5. Return Order (status: fulfilled)                            │
+│                                                                 │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -171,12 +173,14 @@ Response: Updated order object with status "fulfilled"
 
 The service implements the `OrderService` defined in `proto/orders/orders.proto`:
 
-| Method | Request | Response | Description |
-|--------|---------|----------|-------------|
-| `GetOrder` | `GetOrderRequest` | `GetOrderResponse` | Get a single order by ID |
-| `ListOrders` | `ListOrdersRequest` | `ListOrdersResponse` | Get all orders |
-| `CreateOrder` | `CreateOrderRequest` | `CreateOrderResponse` | Create a new order |
-| `FulfillOrder` | `FulfillOrderRequest` | `FulfillOrderResponse` | Fulfill an order |
+┌────────────────────────────────────────────────────────────────────────────────────────────┐
+| Method         | Request               | Response               | Description              |
+|────────────────|───────────────────────|────────────────────────|──────────────────────────|
+| `GetOrder`     | `GetOrderRequest`     | `GetOrderResponse`     | Get a single order by ID |
+| `ListOrders`   | `ListOrdersRequest`   | `ListOrdersResponse`   | Get all orders           |
+| `CreateOrder`  | `CreateOrderRequest`  | `CreateOrderResponse`  | Create a new order       |
+| `FulfillOrder` | `FulfillOrderRequest` | `FulfillOrderResponse` | Fulfill an order         |
+└────────────────────────────────────────────────────────────────────────────────────────────┘
 
 ## Project Structure
 
@@ -201,17 +205,19 @@ services/orders/
 
 The service is configured via environment variables:
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `PORT` | 8003 | HTTP server port |
-| `GRPC_PORT` | 9003 | gRPC server port |
-| `DB_HOST` | (required) | PostgreSQL host |
-| `DB_PORT` | (required) | PostgreSQL port |
-| `DB_NAME` | inventory_db | Database name |
-| `DB_USER` | (required) | Database username |
-| `DB_PASSWORD` | (required) | Database password |
-| `PRODUCTS_GRPC_ADDR` | products-service:9001 | Products service gRPC address |
+┌─────────────────────────────────────────────────────────────────────────────────┐
+| Variable              | Default                | Description                    |
+|───────────────────────|────────────────────────|────────────────────────────────|
+| `PORT`                | 8003                   | HTTP server port               |
+| `GRPC_PORT`           | 9003                   | gRPC server port               |
+| `DB_HOST`             | (required)             | PostgreSQL host                |
+| `DB_PORT`             | (required)             | PostgreSQL port                |
+| `DB_NAME`             | inventory_db           | Database name                  |
+| `DB_USER`             | (required)             | Database username              |
+| `DB_PASSWORD`         | (required)             | Database password              |
+| `PRODUCTS_GRPC_ADDR`  | products-service:9001  | Products service gRPC address  |
 | `INVENTORY_GRPC_ADDR` | inventory-service:9002 | Inventory service gRPC address |
+└─────────────────────────────────────────────────────────────────────────────────┘
 
 ## Running Locally
 
@@ -329,7 +335,9 @@ The Orders Service acts as an orchestrator, coordinating between Products and In
 
 ## Order Statuses
 
-| Status | Description |
-|--------|-------------|
-| `pending` | Order created, stock reserved, awaiting fulfillment |
-| `fulfilled` | Order completed, reserved stock deducted |
+┌───────────────────────────────────────────────────────────────────┐
+| Status      | Description                                         |
+|─────────────|─────────────────────────────────────────────────────|
+| `pending`   | Order created, stock reserved, awaiting fulfillment |
+| `fulfilled` | Order completed, reserved stock deducted            |
+└───────────────────────────────────────────────────────────────────┘
