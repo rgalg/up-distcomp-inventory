@@ -51,9 +51,9 @@ ALL_HEALTHY=true
 
 for port in 8001 8002 8003; do
     if curl -s -f http://localhost:$port/health > /dev/null 2>&1; then
-        echo -e "${GREEN}SUCCESS: ${NC} Port $port is healthy"
+        echo -e "${GREEN}SUCCESS:${NC} Port $port is healthy"
     else
-        echo -e "${RED}✗${NC} Port $port is not responding"
+        echo -e "${RED}ERROR:${NC} Port $port is not responding"
         ALL_HEALTHY=false
     fi
 done

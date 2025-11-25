@@ -118,6 +118,10 @@ run_test() {
             job_name="k6-full-scenario-test"
             script_name="full-scenario-test.js"
             ;;
+        full-high|full-scenario-high-load)
+            job_name="k6-grafana-full-scenario-test-high-load"
+            script_name="full-scenario-test-high-load.js"
+            ;;
         *)
             echo -e "${RED}Unknown test: $test_name${NC}"
             echo "Use --list to see available tests"

@@ -243,3 +243,52 @@ spec:
         - name: scripts
           configMap:
             name: k6-scripts
+---
+# Full Scenario Load Test Job with High Load
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: k6-full-scenario-test-high-load
+  namespace: inventory-system
+  labels:
+    app: k6-load-tests
+    test: full-scenario-high-load
+spec:
+  ttlSecondsAfterFinished: 300
+  backoffLimit: 0
+  template:
+    metadata:
+      labels:
+        app: k6-load-tests
+        test: full-scenario-high-load
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: k6
+          image: grafana/k6:latest
+          command:
+            - k6
+            - run
+            - /scripts/full-scenario-test-high-load.js
+          env:
+            - name: PRODUCTS_URL
+              value: "http://products-service:8001"
+            - name: INVENTORY_URL
+              value: "http://inventory-service:8002"
+            - name: ORDERS_URL
+              value: "http://orders-service:8003"
+          resources:
+            requests:
+              cpu: 200m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          volumeMounts:
+            - name: scripts
+              mountPath: /scripts
+              readOnly: true
+      volumes:
+        - name: scripts
+          configMap:
+            name: k6-scripts

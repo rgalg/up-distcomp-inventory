@@ -88,6 +88,7 @@ list_tests() {
     echo -e "  ${GREEN}inventory${NC}  - Inventory service test (~3 min, up to 40 req/s)"
     echo -e "  ${GREEN}orders${NC}     - Orders service test (~3 min, up to 20 req/s)"
     echo -e "  ${GREEN}full${NC}       - Full scenario test (~7 min, multiple scenarios)"
+    echo -e "  ${GREEN}full-high${NC}  - Full scenario test (high load, ~7 min)"
     echo ""
     echo "Run a test with: $0 run <test-name>"
     echo ""
@@ -242,6 +243,10 @@ run_test() {
             job_name="k6-grafana-full-scenario-test"
             script_name="full-scenario-test.js"
             ;;
+        full-high|full-scenario-high-load)
+            job_name="k6-grafana-full-scenario-test-high-load"
+            script_name="full-scenario-test-high-load.js"
+            ;;
         *)
             echo -e "${RED}Unknown test: $test_name${NC}"
             echo "Use --list to see available tests"
@@ -362,6 +367,9 @@ view_logs() {
         full|full-scenario)
             job_name="k6-grafana-full-scenario-test"
             ;;
+        full-high|full-scenario-high-load)
+            job_name="k6-grafana-full-scenario-test-high-load"
+            ;;
         all)
             if [ "$follow" = "true" ]; then
                 kubectl logs -f -l app=k6-grafana-load-tests -n "$NAMESPACE" --all-containers=true
@@ -402,6 +410,12 @@ stop_test() {
             ;;
         full|full-scenario)
             job_name="k6-grafana-full-scenario-test"
+            ;;
+            full|full-scenario)
+            job_name="k6-grafana-full-scenario-test"
+            ;;
+        full-high|full-scenario-high-load)
+            job_name="k6-grafana-full-scenario-test-high-load"
             ;;
         all)
             echo -e "${YELLOW}Stopping all K6 Grafana tests...${NC}"
