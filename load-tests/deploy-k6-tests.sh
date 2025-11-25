@@ -21,6 +21,11 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 NAMESPACE="inventory-system"
 
+# Service URLs (internal Kubernetes DNS names)
+PRODUCTS_SERVICE_URL="http://products-service:8001"
+INVENTORY_SERVICE_URL="http://inventory-service:8002"
+ORDERS_SERVICE_URL="http://orders-service:8003"
+
 # Colors
 GREEN='\033[0;32m'
 RED='\033[0;31m'
@@ -157,13 +162,13 @@ spec:
             - /scripts/$script_name
           env:
             - name: BASE_URL
-              value: "http://products-service:8001"
+              value: "$PRODUCTS_SERVICE_URL"
             - name: PRODUCTS_URL
-              value: "http://products-service:8001"
+              value: "$PRODUCTS_SERVICE_URL"
             - name: INVENTORY_URL
-              value: "http://inventory-service:8002"
+              value: "$INVENTORY_SERVICE_URL"
             - name: ORDERS_URL
-              value: "http://orders-service:8003"
+              value: "$ORDERS_SERVICE_URL"
           resources:
             requests:
               cpu: 200m

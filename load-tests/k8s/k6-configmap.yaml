@@ -5,6 +5,11 @@ metadata:
   namespace: inventory-system
   labels:
     app: k6-load-tests
+# NOTE: These scripts are separate from the local scripts/ directory by design.
+# - Local scripts (scripts/*.js) are optimized for port-forward testing with low rate limits
+# - ConfigMap scripts are optimized for in-cluster testing with higher throughput
+# - Different configurations are needed due to port-forward limitations
+# If you need to update test logic, update both versions accordingly.
 data:
   # Smoke test - minimal load for quick verification
   smoke-test.js: |
