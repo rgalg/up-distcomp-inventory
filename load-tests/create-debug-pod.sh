@@ -1,5 +1,3 @@
-#!/bin/bash
-
 # Create and connect to K6 debug pod for interactive testing
 # This pod stays running and allows you to manually run K6 tests
 #
@@ -13,12 +11,12 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 NAMESPACE="inventory-system"
 POD_NAME="k6-debug"
 
-# Service URLs (internal Kubernetes DNS names)
+# internal Kubernetes DNS names for service URLs
 PRODUCTS_SERVICE_URL="http://products-service:8001"
 INVENTORY_SERVICE_URL="http://inventory-service:8002"
 ORDERS_SERVICE_URL="http://orders-service:8003"
 
-# Colors
+# colors
 GREEN='\033[0;32m'
 RED='\033[0;31m'
 YELLOW='\033[1;33m'
@@ -47,7 +45,7 @@ show_help() {
 delete_pod() {
     echo -e "${YELLOW}Deleting debug pod...${NC}"
     kubectl delete pod "$POD_NAME" -n "$NAMESPACE" 2>/dev/null || echo "Pod not found"
-    echo -e "${GREEN}✓ Debug pod deleted${NC}"
+    echo -e "${GREEN}SUCCESS: Debug pod deleted${NC}"
 }
 
 show_status() {
@@ -58,12 +56,12 @@ show_status() {
 deploy_scripts() {
     echo -e "${YELLOW}Deploying K6 scripts...${NC}"
     
-    # Deploy standard scripts ConfigMap
+    # deploy ConfigMap for standard scripts
     if [ -f "$SCRIPT_DIR/k8s/k6-configmap.yaml" ]; then
         kubectl apply -f "$SCRIPT_DIR/k8s/k6-configmap.yaml"
     fi
     
-    # Deploy high-load scripts ConfigMap
+    # deploy ConfigMap for high-load scripts if the directory exists
     if [ -d "$SCRIPT_DIR/k8s/high-load" ]; then
         kubectl create configmap k6-high-load-scripts \
             --from-file="$SCRIPT_DIR/k8s/high-load/" \
@@ -71,11 +69,11 @@ deploy_scripts() {
             --dry-run=client -o yaml | kubectl apply -f -
     fi
     
-    echo -e "${GREEN}✓ Scripts deployed${NC}"
+    echo -e "${GREEN}SUCCESS: Scripts deployed${NC}"
 }
 
 create_pod() {
-    # Check if pod already exists
+    # check if pod already exists
     if kubectl get pod "$POD_NAME" -n "$NAMESPACE" &>/dev/null; then
         echo -e "${YELLOW}Debug pod already exists${NC}"
         return 0
@@ -83,11 +81,11 @@ create_pod() {
     
     echo -e "${YELLOW}Creating debug pod...${NC}"
     
-    # Apply the debug pod manifest
+    # apply the pod manifest
     if [ -f "$SCRIPT_DIR/k8s/k6-debug-pod.yaml" ]; then
         kubectl apply -f "$SCRIPT_DIR/k8s/k6-debug-pod.yaml"
     else
-        # Create inline if manifest doesn't exist
+        # create manifest inline if it doesn't exist
         cat <<EOF | kubectl apply -f -
 apiVersion: v1
 kind: Pod
@@ -138,7 +136,7 @@ spec:
 EOF
     fi
     
-    echo -e "${GREEN}✓ Debug pod created${NC}"
+    echo -e "${GREEN}SUCCESS: Debug pod created${NC}"
 }
 
 wait_for_pod() {

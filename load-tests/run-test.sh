@@ -1,5 +1,3 @@
-#!/bin/bash
-
 # K6 Load Test Runner (via Port-Forward)
 #
 # This script runs K6 load tests via kubectl port-forward.
@@ -53,7 +51,7 @@ ALL_HEALTHY=true
 
 for port in 8001 8002 8003; do
     if curl -s -f http://localhost:$port/health > /dev/null 2>&1; then
-        echo -e "${GREEN}✓${NC} Port $port is healthy"
+        echo -e "${GREEN}SUCCESS: ${NC} Port $port is healthy"
     else
         echo -e "${RED}✗${NC} Port $port is not responding"
         ALL_HEALTHY=false

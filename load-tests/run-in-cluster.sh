@@ -1,5 +1,3 @@
-#!/bin/bash
-
 # Run K6 load tests inside Kubernetes cluster
 # Wrapper script for managing in-cluster K6 tests
 #
@@ -179,7 +177,7 @@ stop_test() {
         all)
             echo -e "${YELLOW}Stopping all K6 tests...${NC}"
             kubectl delete jobs -n "$NAMESPACE" -l app=k6-load-tests 2>/dev/null || true
-            echo -e "${GREEN}✓ All tests stopped${NC}"
+            echo -e "${GREEN}SUCCESS:  All tests stopped${NC}"
             return
             ;;
         *)
@@ -190,7 +188,7 @@ stop_test() {
     
     echo -e "${YELLOW}Stopping test: $test_name${NC}"
     kubectl delete job "$job_name" -n "$NAMESPACE" 2>/dev/null || echo "Job not found"
-    echo -e "${GREEN}✓ Test stopped${NC}"
+    echo -e "${GREEN}SUCCESS:  Test stopped${NC}"
 }
 
 cleanup() {
@@ -202,7 +200,7 @@ cleanup() {
     # Delete failed jobs
     kubectl delete jobs -n "$NAMESPACE" -l app=k6-load-tests --field-selector status.failed=1 2>/dev/null || true
     
-    echo -e "${GREEN}✓ Cleanup complete${NC}"
+    echo -e "${GREEN}SUCCESS:  Cleanup complete${NC}"
 }
 
 deploy_scripts() {
@@ -211,7 +209,7 @@ deploy_scripts() {
     # Deploy standard scripts
     if [ -f "$SCRIPT_DIR/k8s/k6-configmap.yaml" ]; then
         kubectl apply -f "$SCRIPT_DIR/k8s/k6-configmap.yaml"
-        echo -e "${GREEN}✓ Standard scripts ConfigMap deployed${NC}"
+        echo -e "${GREEN}SUCCESS:  Standard scripts ConfigMap deployed${NC}"
     fi
     
     # Deploy high-load scripts if they exist
@@ -221,7 +219,7 @@ deploy_scripts() {
             --from-file="$SCRIPT_DIR/k8s/high-load/" \
             -n "$NAMESPACE" \
             --dry-run=client -o yaml | kubectl apply -f -
-        echo -e "${GREEN}✓ High-load scripts ConfigMap deployed${NC}"
+        echo -e "${GREEN}SUCCESS:  High-load scripts ConfigMap deployed${NC}"
     fi
 }
 
@@ -326,7 +324,7 @@ spec:
             name: k6-high-load-scripts
 EOF
     
-    echo -e "${GREEN}✓ High-load job created: $job_name${NC}"
+    echo -e "${GREEN}SUCCESS:  High-load job created: $job_name${NC}"
     
     # Wait for pod to start
     echo -e "${YELLOW}Waiting for pod to start...${NC}"
@@ -339,7 +337,7 @@ EOF
 
 # Check if kubectl is available
 if ! command -v kubectl &> /dev/null; then
-    echo -e "${RED}Error: kubectl is not installed or not in PATH${NC}"
+    echo -e "${RED}ERROR:: kubectl is not installed or not in PATH${NC}"
     exit 1
 fi
 
@@ -377,7 +375,7 @@ done
 case "$COMMAND" in
     run)
         if [ -z "$ARG" ]; then
-            echo -e "${RED}Error: Please specify a test to run${NC}"
+            echo -e "${RED}ERROR:: Please specify a test to run${NC}"
             echo "Use: $0 list to see available tests"
             exit 1
         fi
@@ -385,7 +383,7 @@ case "$COMMAND" in
         ;;
     run-high)
         if [ -z "$ARG" ]; then
-            echo -e "${RED}Error: Please specify a test to run${NC}"
+            echo -e "${RED}ERROR:: Please specify a test to run${NC}"
             echo "Available: products, inventory, orders, full"
             exit 1
         fi
@@ -399,14 +397,14 @@ case "$COMMAND" in
         ;;
     logs)
         if [ -z "$ARG" ]; then
-            echo -e "${RED}Error: Please specify a test name or 'all'${NC}"
+            echo -e "${RED}ERROR:: Please specify a test name or 'all'${NC}"
             exit 1
         fi
         view_logs "$ARG" "$FOLLOW_LOGS"
         ;;
     stop)
         if [ -z "$ARG" ]; then
-            echo -e "${RED}Error: Please specify a test to stop or 'all'${NC}"
+            echo -e "${RED}ERROR:: Please specify a test to stop or 'all'${NC}"
             exit 1
         fi
         stop_test "$ARG"

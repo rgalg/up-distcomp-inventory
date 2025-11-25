@@ -1,5 +1,3 @@
-#!/bin/bash
-
 # Deploy K6 load tests to Kubernetes
 # This script creates/updates the ConfigMap and runs K6 Jobs in-cluster
 #
@@ -78,7 +76,7 @@ cleanup_jobs() {
     # Delete failed jobs
     kubectl delete jobs -n "$NAMESPACE" -l app=k6-load-tests --field-selector status.failed=1 2>/dev/null || true
     
-    echo -e "${GREEN}✓ Cleanup complete${NC}"
+    echo -e "${GREEN}SUCCESS: Cleanup complete${NC}"
 }
 
 deploy_configmap() {
@@ -86,9 +84,9 @@ deploy_configmap() {
     
     if [ -f "$SCRIPT_DIR/k8s/k6-configmap.yaml" ]; then
         kubectl apply -f "$SCRIPT_DIR/k8s/k6-configmap.yaml"
-        echo -e "${GREEN}✓ ConfigMap deployed${NC}"
+        echo -e "${GREEN}SUCCESS: ConfigMap deployed${NC}"
     else
-        echo -e "${RED}Error: k6-configmap.yaml not found${NC}"
+        echo -e "${RED}ERROR:: k6-configmap.yaml not found${NC}"
         exit 1
     fi
 }
@@ -186,7 +184,7 @@ spec:
             name: k6-scripts
 EOF
     
-    echo -e "${GREEN}✓ Job created: $job_name${NC}"
+    echo -e "${GREEN}SUCCESS: Job created: $job_name${NC}"
     
     # Wait for pod to start
     echo -e "${YELLOW}Waiting for pod to start...${NC}"
@@ -237,13 +235,13 @@ done
 
 # Check if kubectl is available
 if ! command -v kubectl &> /dev/null; then
-    echo -e "${RED}Error: kubectl is not installed or not in PATH${NC}"
+    echo -e "${RED}ERROR:: kubectl is not installed or not in PATH${NC}"
     exit 1
 fi
 
 # Check if namespace exists
 if ! kubectl get namespace "$NAMESPACE" &> /dev/null; then
-    echo -e "${RED}Error: Namespace '$NAMESPACE' does not exist${NC}"
+    echo -e "${RED}ERROR:: Namespace '$NAMESPACE' does not exist${NC}"
     echo "Make sure your Kubernetes cluster is running and the namespace is created."
     exit 1
 fi

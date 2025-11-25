@@ -1,5 +1,3 @@
-#!/bin/bash
-
 # Deploy K6 load tests with Grafana visualization
 # This script deploys InfluxDB and Grafana to Kubernetes for real-time 
 # monitoring of K6 load test results through dashboards.
@@ -99,13 +97,13 @@ list_tests() {
 check_prerequisites() {
     # Check if kubectl is available
     if ! command -v kubectl &> /dev/null; then
-        echo -e "${RED}Error: kubectl is not installed or not in PATH${NC}"
+        echo -e "${RED}ERROR: kubectl is not installed or not in PATH${NC}"
         exit 1
     fi
 
     # Check if namespace exists
     if ! kubectl get namespace "$NAMESPACE" &> /dev/null; then
-        echo -e "${RED}Error: Namespace '$NAMESPACE' does not exist${NC}"
+        echo -e "${RED}ERROR: Namespace '$NAMESPACE' does not exist${NC}"
         echo "Make sure your Kubernetes cluster is running and the namespace is created."
         exit 1
     fi
@@ -116,9 +114,9 @@ deploy_k6_scripts() {
     
     if [ -f "$SCRIPT_DIR/k8s/k6-configmap.yaml" ]; then
         kubectl apply -f "$SCRIPT_DIR/k8s/k6-configmap.yaml"
-        echo -e "${GREEN}✓ K6 scripts ConfigMap deployed${NC}"
+        echo -e "${GREEN}SUCCESS: K6 scripts ConfigMap deployed${NC}"
     else
-        echo -e "${RED}Error: k6-configmap.yaml not found${NC}"
+        echo -e "${RED}ERROR: k6-configmap.yaml not found${NC}"
         exit 1
     fi
 }
@@ -135,7 +133,7 @@ deploy_influxdb() {
     # Additional wait for the database to initialize
     sleep 5
     
-    echo -e "${GREEN}✓ InfluxDB deployed${NC}"
+    echo -e "${GREEN}SUCCESS: InfluxDB deployed${NC}"
 }
 
 deploy_grafana_configmaps() {
@@ -143,7 +141,7 @@ deploy_grafana_configmaps() {
     
     kubectl apply -f "$SCRIPT_DIR/k8s/grafana/grafana-configmaps.yaml"
     
-    echo -e "${GREEN}✓ Grafana ConfigMaps deployed${NC}"
+    echo -e "${GREEN}SUCCESS: Grafana ConfigMaps deployed${NC}"
 }
 
 deploy_grafana() {
@@ -155,7 +153,7 @@ deploy_grafana() {
     echo -e "${YELLOW}Waiting for Grafana to be ready...${NC}"
     kubectl wait --for=condition=available deployment/grafana -n "$NAMESPACE" --timeout=120s 2>/dev/null || true
     
-    echo -e "${GREEN}✓ Grafana deployed${NC}"
+    echo -e "${GREEN}SUCCESS: Grafana deployed${NC}"
 }
 
 deploy_infrastructure() {
@@ -170,7 +168,7 @@ deploy_infrastructure() {
     deploy_grafana
     
     echo ""
-    echo -e "${GREEN}✓ Infrastructure deployed successfully!${NC}"
+    echo -e "${GREEN}SUCCESS: Infrastructure deployed successfully!${NC}"
     echo ""
     echo -e "${BLUE}Access Grafana at:${NC}"
     echo -e "  http://localhost:${GRAFANA_PORT}"
@@ -319,7 +317,7 @@ spec:
             name: k6-scripts
 EOF
     
-    echo -e "${GREEN}✓ Job created: $job_name${NC}"
+    echo -e "${GREEN}SUCCESS: Job created: $job_name${NC}"
     
     # Wait for pod to start
     echo -e "${YELLOW}Waiting for test pod to start...${NC}"
@@ -408,7 +406,7 @@ stop_test() {
         all)
             echo -e "${YELLOW}Stopping all K6 Grafana tests...${NC}"
             kubectl delete jobs -n "$NAMESPACE" -l app=k6-grafana-load-tests 2>/dev/null || true
-            echo -e "${GREEN}✓ All tests stopped${NC}"
+            echo -e "${GREEN}SUCCESS: All tests stopped${NC}"
             return
             ;;
         *)
@@ -419,7 +417,7 @@ stop_test() {
     
     echo -e "${YELLOW}Stopping test: $test_name${NC}"
     kubectl delete job "$job_name" -n "$NAMESPACE" 2>/dev/null || echo "Job not found"
-    echo -e "${GREEN}✓ Test stopped${NC}"
+    echo -e "${GREEN}SUCCESS: Test stopped${NC}"
 }
 
 cleanup_jobs() {
@@ -431,7 +429,7 @@ cleanup_jobs() {
     # Delete failed jobs
     kubectl delete jobs -n "$NAMESPACE" -l app=k6-grafana-load-tests --field-selector status.failed=1 2>/dev/null || true
     
-    echo -e "${GREEN}✓ Cleanup complete${NC}"
+    echo -e "${GREEN}SUCCESS: Cleanup complete${NC}"
 }
 
 delete_infrastructure() {
@@ -453,7 +451,7 @@ delete_infrastructure() {
     kubectl delete configmap grafana-dashboards-provider -n "$NAMESPACE" 2>/dev/null || true
     kubectl delete configmap grafana-k6-dashboard -n "$NAMESPACE" 2>/dev/null || true
     
-    echo -e "${GREEN}✓ Infrastructure deleted${NC}"
+    echo -e "${GREEN}SUCCESS: Infrastructure deleted${NC}"
 }
 
 # Parse arguments
@@ -518,14 +516,14 @@ case "$COMMAND" in
         ;;
     logs)
         if [ -z "$ARG" ]; then
-            echo -e "${RED}Error: Please specify a test name or 'all'${NC}"
+            echo -e "${RED}ERROR: Please specify a test name or 'all'${NC}"
             exit 1
         fi
         view_logs "$ARG" "$FOLLOW_LOGS"
         ;;
     stop)
         if [ -z "$ARG" ]; then
-            echo -e "${RED}Error: Please specify a test to stop or 'all'${NC}"
+            echo -e "${RED}ERROR: Please specify a test to stop or 'all'${NC}"
             exit 1
         fi
         stop_test "$ARG"
