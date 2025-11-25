@@ -4,12 +4,32 @@ import { Rate } from 'k6/metrics';
 
 const errorRate = new Rate('errors');
 
+// NOTE: This test uses ramping-arrival-rate executor to control request rate precisely.
+// This is important when testing via kubectl port-forward, which is single-threaded
+// and cannot handle high request volumes. The Orders service also makes gRPC calls
+// to Products and Inventory services, so we use lower rates than other tests.
 export const options = {
-  stages: [
-    { duration: '30s', target: 15 },
-    { duration: '2m', target: 15 },
-    { duration: '30s', target: 0 },
-  ],
+  // Use ramping-arrival-rate executor for better control over request rate
+  // This prevents overwhelming port-forward connections
+  // Using lower rates because Orders service makes gRPC calls to other services
+  scenarios: {
+    orders_test: {
+      executor: 'ramping-arrival-rate',
+      startRate: 3,                 // Start with 3 requests per second (lower due to gRPC calls)
+      timeUnit: '1s',
+      preAllocatedVUs: 10,          // Pre-allocate 10 VUs
+      maxVUs: 25,                   // Allow up to 25 VUs if needed
+      stages: [
+        { duration: '30s', target: 3 },   // Stay at 3 req/s for warmup
+        { duration: '2m', target: 8 },    // Ramp up to 8 req/s
+        { duration: '30s', target: 0 },   // Ramp down to 0
+      ],
+    },
+  },
+  
+  // Connection settings for port-forward compatibility
+  noConnectionReuse: false,         // Reuse connections to reduce overhead
+  
   thresholds: {
     http_req_duration: ['p(95)<1000'], // orders might take longer due to gRPC calls (this service calls Products and Inventory services)
     errors: ['rate<0.1'],

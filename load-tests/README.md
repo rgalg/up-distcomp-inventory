@@ -125,6 +125,69 @@ kubectl get pods -n inventory-system
 kubectl logs -n inventory-system -l app=products-service
 ```
 
+### Port-Forward Limitations and Rate Limiting
+
+**Important:** `kubectl port-forward` is **single-threaded** and not designed for high-throughput load testing. This is why our test scripts use `ramping-arrival-rate` or `constant-arrival-rate` executors instead of stages with many VUs.
+
+**Symptoms of overwhelming port-forward:**
+- Connection refused errors
+- Socket timeouts
+- Request timeouts
+- Inconsistent response times
+
+**Why arrival-rate executors work better:**
+- They control the **exact number of requests per second**, regardless of response times
+- Standard stages/VUs approach can create many concurrent requests if responses are slow
+- Connection reuse (`noConnectionReuse: false`) reduces connection overhead
+
+**Testing via port-forward vs direct service access:**
+
+| Aspect | Port-Forward | Direct Service (NodePort/LoadBalancer) |
+|--------|-------------|----------------------------------------|
+| Max throughput | ~10-20 req/s | Hundreds to thousands req/s |
+| Use case | Development/debugging | Production load testing |
+| Connection handling | Single-threaded | Kubernetes-managed |
+| Recommended executor | `constant-arrival-rate` | Any (stages work fine) |
+
+**Adjusting rate limits for different scenarios:**
+
+```javascript
+// For port-forward (conservative settings)
+scenarios: {
+  test: {
+    executor: 'ramping-arrival-rate',
+    startRate: 5,
+    stages: [
+      { duration: '30s', target: 5 },
+      { duration: '1m', target: 10 },
+    ],
+  },
+}
+
+// For direct service access (higher throughput)
+scenarios: {
+  test: {
+    executor: 'ramping-arrival-rate',
+    startRate: 20,
+    stages: [
+      { duration: '30s', target: 50 },
+      { duration: '1m', target: 100 },
+    ],
+  },
+}
+
+// Simple smoke test via port-forward
+scenarios: {
+  smoke: {
+    executor: 'constant-arrival-rate',
+    rate: 5,
+    duration: '30s',
+    preAllocatedVUs: 2,
+    maxVUs: 5,
+  },
+}
+```
+
 ## Cleanup
 
 ```bash

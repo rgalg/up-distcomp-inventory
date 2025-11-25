@@ -1,18 +1,25 @@
 import http from 'k6/http';
 import { check, sleep } from 'k6';
 
+// NOTE: This test is designed to work with kubectl port-forward connections.
+// Port-forward is single-threaded and not designed for high-throughput load testing,
+// so we use a constant-arrival-rate executor to control the request rate precisely.
 export const options = {
-  vus: 1,
-  duration: '30s',
+  // Use constant-arrival-rate executor to limit request rate
+  // This prevents overwhelming port-forward connections
+  scenarios: {
+    smoke: {
+      executor: 'constant-arrival-rate',
+      rate: 5,                    // 5 requests per second (conservative for port-forward)
+      timeUnit: '1s',
+      duration: '30s',
+      preAllocatedVUs: 2,         // pre-allocate 2 VUs
+      maxVUs: 5,                  // allow up to 5 VUs if needed
+    },
+  },
   
   noConnectionReuse: false,  // reuse connections (default but let's be explicit)
   userAgent: 'k6-load-test',
-  
-  // limit RPS to avoid overwhelming port-forward
-  rps: 10,  // max 10 requests per second across all VUs
-  
-  // add longer timeouts
-  httpDebug: 'full',
   
   thresholds: {
     http_req_failed: ['rate<0.1'],
