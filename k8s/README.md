@@ -156,29 +156,26 @@ All services use Kubernetes DNS for service discovery:
 
 ## Manifest Files
 
-┌─────────────────────────────────────────────────────────────────────────────────────────────────┐
-| File                                      | Description                                         |
-|───────────────────────────────────────────|─────────────────────────────────────────────────────|
-| `namespace.yaml`                          | Creates the `inventory-system` namespace            |
-| `postgres-deployment.yaml`                | PostgreSQL deployment, service, and PVC             |
-| `postgres-init-job.yaml`                  | Job to initialize database schema                   |
-| `postgres-config-generated.yaml.template` | Template for database configuration                 |
-| `products-deployment.yaml`                | Products service deployment and service             |
-| `inventory-deployment.yaml`               | Inventory service deployment and service            |
-| `orders-deployment.yaml`                  | Orders service deployment and service               |
-| `frontend-deployment.yaml`                | Frontend deployment and LoadBalancer service        |
-| `hpa.yaml`                                | Horizontal Pod Autoscalers for all backend services |
-└─────────────────────────────────────────────────────────────────────────────────────────────────┘
+| File | Description |
+|------|-------------|
+| `namespace.yaml` | Creates the `inventory-system` namespace |
+| `postgres-deployment.yaml` | PostgreSQL deployment, service, and PVC |
+| `postgres-init-job.yaml` | Job to initialize database schema |
+| `postgres-config-generated.yaml.template` | Template for database configuration |
+| `products-deployment.yaml` | Products service deployment and service |
+| `inventory-deployment.yaml` | Inventory service deployment and service |
+| `orders-deployment.yaml` | Orders service deployment and service |
+| `frontend-deployment.yaml` | Frontend deployment and LoadBalancer service |
+| `hpa.yaml` | Horizontal Pod Autoscalers for all backend services |
+
 
 ### Configuration Scripts
 
-┌──────────────────────────────────────────────────────────────────────────────────┐
-| Script                               | Description                               |
-|──────────────────────────────────────|───────────────────────────────────────────|
+| Script | Description |
+|--------|-------------|
 | `postgres-create-config-from-env.sh` | Generates ConfigMap/Secret from .env file |
-| `postgres-create-init-configmap.sh`  | Creates ConfigMap from SQL schema         |
-| `delete-generated-files.sh`          | Removes generated configuration files     |
-└──────────────────────────────────────────────────────────────────────────────────┘
+| `postgres-create-init-configmap.sh` | Creates ConfigMap from SQL schema |
+| `delete-generated-files.sh` | Removes generated configuration files |
 
 ## Service Types
 

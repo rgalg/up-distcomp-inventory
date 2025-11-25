@@ -77,13 +77,11 @@ frontend/
 
 The frontend communicates with backend services through NGINX reverse proxy:
 
-┌────────────────────────────────────────────────────────────────┐
-| Frontend Route     | Backend Service        | Backend Endpoint |
-|────────────────────|────────────────────────|──────────────────|
-| `/api/products/*`  | products-service:8001  | `/*`             |
-| `/api/inventory/*` | inventory-service:8002 | `/*`             |
-| `/api/orders/*`    | orders-service:8003    | `/*`             |
-└────────────────────────────────────────────────────────────────┘
+| Frontend Route | Backend Service | Backend Endpoint |
+|----------------|-----------------|------------------|
+| `/api/products/*` | products-service:8001 | `/*` |
+| `/api/inventory/*` | inventory-service:8002 | `/*` |
+| `/api/orders/*` | orders-service:8003 | `/*` |
 
 ## Configuration
 

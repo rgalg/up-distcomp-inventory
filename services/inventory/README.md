@@ -43,12 +43,10 @@ The Inventory Service is responsible for:
 
 ## Ports
 
-┌───────────────────────────────────────────────────────┐
-| Protocol | Port | Description                         |
-|──────────|──────|─────────────────────────────────────|
-| HTTP     | 8002 | REST API for frontend communication |
-| gRPC     | 9002 | Inter-service communication         |
-└───────────────────────────────────────────────────────┘
+| Protocol | Port | Description |
+|----------|------|-------------|
+| HTTP | 8002 | REST API for frontend communication |
+| gRPC | 9002 | Inter-service communication |
 
 ## Stock Management
 
@@ -148,16 +146,15 @@ Response: Updated inventory item
 ### gRPC API
 
 The service implements the `InventoryService` defined in `proto/inventory/inventory.proto`:
-┌─────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
-| Method               | Request                     | Response                     | Description                 |
-|──────────────────────|─────────────────────────────|──────────────────────────────|─────────────────────────────|
-| `GetInventory`       | `GetInventoryRequest`       | `GetInventoryResponse`       | Get inventory for a product |
-| `ListInventory`      | `ListInventoryRequest`      | `ListInventoryResponse`      | Get all inventory items     |
-| `UpdateStock`        | `UpdateStockRequest`        | `UpdateStockResponse`        | Update stock quantity       |
-| `ReserveStock`       | `ReserveStockRequest`       | `ReserveStockResponse`       | Reserve stock for an order  |
-| `FulfillReservation` | `FulfillReservationRequest` | `FulfillReservationResponse` | Fulfill a reservation       |
-| `ReleaseReservation` | `ReleaseReservationRequest` | `ReleaseReservationResponse` | Release a reservation       |
-└─────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+| Method | Request | Response | Description |
+|--------|---------|----------|-------------|
+| `GetInventory` | `GetInventoryRequest` | `GetInventoryResponse` | Get inventory for a product |
+| `ListInventory` | `ListInventoryRequest` | `ListInventoryResponse` | Get all inventory items |
+| `UpdateStock` | `UpdateStockRequest` | `UpdateStockResponse` | Update stock quantity |
+| `ReserveStock` | `ReserveStockRequest` | `ReserveStockResponse` | Reserve stock for an order |
+| `FulfillReservation` | `FulfillReservationRequest` | `FulfillReservationResponse` | Fulfill a reservation |
+| `ReleaseReservation` | `ReleaseReservationRequest` | `ReleaseReservationResponse` | Release a reservation |
+
 
 ## Project Structure
 
@@ -182,17 +179,15 @@ services/inventory/
 
 The service is configured via environment variables:
 
-┌──────────────────────────────────────────────────┐
-| Variable      | Default      | Description       |
-|───────────────|──────────────|───────────────────|
-| `PORT`        | 8002         | HTTP server port  |
-| `GRPC_PORT`   | 9002         | gRPC server port  |
-| `DB_HOST`     | (required)   | PostgreSQL host   |
-| `DB_PORT`     | (required)   | PostgreSQL port   |
-| `DB_NAME`     | inventory_db | Database name     |
-| `DB_USER`     | (required)   | Database username |
-| `DB_PASSWORD` | (required)   | Database password |
-└──────────────────────────────────────────────────┘
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `PORT` | 8002 | HTTP server port |
+| `GRPC_PORT` | 9002 | gRPC server port |
+| `DB_HOST` | (required) | PostgreSQL host |
+| `DB_PORT` | (required) | PostgreSQL port |
+| `DB_NAME` | inventory_db | Database name |
+| `DB_USER` | (required) | Database username |
+| `DB_PASSWORD` | (required) | Database password |
 
 ## Running Locally
 

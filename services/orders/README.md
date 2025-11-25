@@ -48,12 +48,11 @@ The Orders Service is responsible for:
 
 ## Ports
 
-┌───────────────────────────────────────────────────────┐
-| Protocol | Port | Description                         |
-|──────────|──────|─────────────────────────────────────|
-| HTTP     | 8003 | REST API for frontend communication |
-| gRPC     | 9003 | Inter-service communication         |
-└───────────────────────────────────────────────────────┘
+| Protocol | Port | Description |
+|----------|------|-------------|
+| HTTP | 8003 | REST API for frontend communication |
+| gRPC | 9003 | Inter-service communication |
+
 
 ## Order Workflow
 
@@ -173,14 +172,12 @@ Response: Updated order object with status "fulfilled"
 
 The service implements the `OrderService` defined in `proto/orders/orders.proto`:
 
-┌────────────────────────────────────────────────────────────────────────────────────────────┐
-| Method         | Request               | Response               | Description              |
-|────────────────|───────────────────────|────────────────────────|──────────────────────────|
-| `GetOrder`     | `GetOrderRequest`     | `GetOrderResponse`     | Get a single order by ID |
-| `ListOrders`   | `ListOrdersRequest`   | `ListOrdersResponse`   | Get all orders           |
-| `CreateOrder`  | `CreateOrderRequest`  | `CreateOrderResponse`  | Create a new order       |
-| `FulfillOrder` | `FulfillOrderRequest` | `FulfillOrderResponse` | Fulfill an order         |
-└────────────────────────────────────────────────────────────────────────────────────────────┘
+| Method | Request | Response | Description |
+|--------|---------|----------|-------------|
+| `GetOrder` | `GetOrderRequest` | `GetOrderResponse` | Get a single order by ID |
+| `ListOrders` | `ListOrdersRequest` | `ListOrdersResponse` | Get all orders |
+| `CreateOrder` | `CreateOrderRequest` | `CreateOrderResponse` | Create a new order |
+| `FulfillOrder` | `FulfillOrderRequest` | `FulfillOrderResponse` | Fulfill an order |
 
 ## Project Structure
 
@@ -205,19 +202,17 @@ services/orders/
 
 The service is configured via environment variables:
 
-┌─────────────────────────────────────────────────────────────────────────────────┐
-| Variable              | Default                | Description                    |
-|───────────────────────|────────────────────────|────────────────────────────────|
-| `PORT`                | 8003                   | HTTP server port               |
-| `GRPC_PORT`           | 9003                   | gRPC server port               |
-| `DB_HOST`             | (required)             | PostgreSQL host                |
-| `DB_PORT`             | (required)             | PostgreSQL port                |
-| `DB_NAME`             | inventory_db           | Database name                  |
-| `DB_USER`             | (required)             | Database username              |
-| `DB_PASSWORD`         | (required)             | Database password              |
-| `PRODUCTS_GRPC_ADDR`  | products-service:9001  | Products service gRPC address  |
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `PORT` | 8003 | HTTP server port |
+| `GRPC_PORT` | 9003 | gRPC server port |
+| `DB_HOST` | (required) | PostgreSQL host |
+| `DB_PORT` | (required) | PostgreSQL port |
+| `DB_NAME` | inventory_db | Database name |
+| `DB_USER` | (required) | Database username |
+| `DB_PASSWORD` | (required) | Database password |
+| `PRODUCTS_GRPC_ADDR` | products-service:9001 | Products service gRPC address |
 | `INVENTORY_GRPC_ADDR` | inventory-service:9002 | Inventory service gRPC address |
-└─────────────────────────────────────────────────────────────────────────────────┘
 
 ## Running Locally
 
@@ -335,9 +330,7 @@ The Orders Service acts as an orchestrator, coordinating between Products and In
 
 ## Order Statuses
 
-┌───────────────────────────────────────────────────────────────────┐
-| Status      | Description                                         |
-|─────────────|─────────────────────────────────────────────────────|
-| `pending`   | Order created, stock reserved, awaiting fulfillment |
-| `fulfilled` | Order completed, reserved stock deducted            |
-└───────────────────────────────────────────────────────────────────┘
+| Status | Description |
+|--------|-------------|
+| `pending` | Order created, stock reserved, awaiting fulfillment |
+| `fulfilled` | Order completed, reserved stock deducted |

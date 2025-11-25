@@ -360,13 +360,11 @@ The application starts with sample data:
 
 The project includes comprehensive load testing infrastructure using K6. Three testing approaches are supported:
 
-┌───────────────────────────────────────────────────────────────────────────────────────────────┐
-| Approach         | Best For                               | Max Throughput | Setup Complexity |
-|──────────────────|────────────────────────────────────────|────────────────|──────────────────|
-| **Port-Forward** | Quick smoke tests, debugging           | ~15-20 req/s   | Low              |
-| **In-Cluster**   | High-load testing, HPA testing         | 100+ req/s     | Medium           |
-| **Grafana**      | Load testing with real-time dashboards | 100+ req/s     | Medium           |
-└───────────────────────────────────────────────────────────────────────────────────────────────┘
+| Approach | Best For | Max Throughput | Setup Complexity |
+|----------|----------|----------------|------------------|
+| **Port-Forward** | Quick smoke tests, debugging | ~15-20 req/s | Low |
+| **In-Cluster** | High-load testing, HPA testing | 100+ req/s | Medium |
+| **Grafana** | Load testing with real-time dashboards | 100+ req/s | Medium |
 
 ### Quick Load Test
 
