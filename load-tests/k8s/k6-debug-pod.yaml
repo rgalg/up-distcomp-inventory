@@ -1,0 +1,48 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: k6-debug
+  namespace: inventory-system
+  labels:
+    app: k6-debug
+spec:
+  containers:
+    - name: k6
+      image: grafana/k6:latest
+      # Keep pod running for interactive testing
+      command:
+        - sleep
+        - infinity
+      env:
+        # Internal Kubernetes service URLs
+        - name: BASE_URL
+          value: "http://products-service:8001"
+        - name: PRODUCTS_URL
+          value: "http://products-service:8001"
+        - name: INVENTORY_URL
+          value: "http://inventory-service:8002"
+        - name: ORDERS_URL
+          value: "http://orders-service:8003"
+      resources:
+        requests:
+          cpu: 100m
+          memory: 128Mi
+        limits:
+          cpu: 500m
+          memory: 512Mi
+      volumeMounts:
+        - name: scripts
+          mountPath: /scripts
+          readOnly: true
+        - name: high-load-scripts
+          mountPath: /scripts/high-load
+          readOnly: true
+  volumes:
+    - name: scripts
+      configMap:
+        name: k6-scripts
+    - name: high-load-scripts
+      configMap:
+        name: k6-high-load-scripts
+        optional: true
+  restartPolicy: Never

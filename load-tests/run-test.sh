@@ -1,3 +1,17 @@
+#!/bin/bash
+
+# K6 Load Test Runner (via Port-Forward)
+#
+# This script runs K6 load tests via kubectl port-forward.
+# Suitable for quick smoke tests and low-rate testing only.
+#
+# IMPORTANT: Port-forward has throughput limitations (~15-20 req/s max).
+# For high-load testing, use the in-cluster approach instead:
+#   ./run-in-cluster.sh run <test>
+#   ./create-debug-pod.sh
+#
+# See README.md for more information on testing approaches.
+
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -7,9 +21,13 @@ cd "$SCRIPT_DIR"
 GREEN='\033[0;32m'
 RED='\033[0;31m'
 YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-echo -e "${YELLOW}=== K6 Load Test Runner ===${NC}\n"
+echo -e "${YELLOW}=== K6 Load Test Runner (Port-Forward) ===${NC}\n"
+
+echo -e "${BLUE}NOTE: This runs tests via port-forward which has rate limitations.${NC}"
+echo -e "${BLUE}For high-load testing, use: ./run-in-cluster.sh run <test>${NC}\n"
 
 # Check if k6 is installed
 if ! command -v k6 &> /dev/null; then
