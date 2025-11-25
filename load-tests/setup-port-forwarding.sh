@@ -1,3 +1,4 @@
+#!/bin/bash
 # Kill any existing port forwards
 pkill -f "port-forward.*inventory-system" || true
 

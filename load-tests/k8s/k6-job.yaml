@@ -1,0 +1,245 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: k6-load-test
+  namespace: inventory-system
+  labels:
+    app: k6-load-tests
+spec:
+  # Delete job after 5 minutes
+  ttlSecondsAfterFinished: 300
+  backoffLimit: 0
+  template:
+    metadata:
+      labels:
+        app: k6-load-tests
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: k6
+          image: grafana/k6:latest
+          # Default to smoke test, can be overridden
+          # To run different tests, create a new job with different command
+          command:
+            - k6
+            - run
+            - --out
+            - json=/results/results.json
+            - /scripts/smoke-test.js
+          env:
+            # Internal Kubernetes service URLs (no port-forward needed)
+            - name: BASE_URL
+              value: "http://products-service:8001"
+            - name: PRODUCTS_URL
+              value: "http://products-service:8001"
+            - name: INVENTORY_URL
+              value: "http://inventory-service:8002"
+            - name: ORDERS_URL
+              value: "http://orders-service:8003"
+          resources:
+            requests:
+              cpu: 200m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          volumeMounts:
+            - name: scripts
+              mountPath: /scripts
+              readOnly: true
+            - name: results
+              mountPath: /results
+      volumes:
+        - name: scripts
+          configMap:
+            name: k6-scripts
+        - name: results
+          emptyDir: {}
+---
+# Example Jobs for running specific tests
+# Apply with: kubectl apply -f k6-job.yaml
+# Then apply specific test jobs as needed
+
+# Products Service Load Test Job
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: k6-products-test
+  namespace: inventory-system
+  labels:
+    app: k6-load-tests
+    test: products-service
+spec:
+  ttlSecondsAfterFinished: 300
+  backoffLimit: 0
+  template:
+    metadata:
+      labels:
+        app: k6-load-tests
+        test: products-service
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: k6
+          image: grafana/k6:latest
+          command:
+            - k6
+            - run
+            - /scripts/products-service-test.js
+          env:
+            - name: BASE_URL
+              value: "http://products-service:8001"
+          resources:
+            requests:
+              cpu: 200m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          volumeMounts:
+            - name: scripts
+              mountPath: /scripts
+              readOnly: true
+      volumes:
+        - name: scripts
+          configMap:
+            name: k6-scripts
+---
+# Inventory Service Load Test Job
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: k6-inventory-test
+  namespace: inventory-system
+  labels:
+    app: k6-load-tests
+    test: inventory-service
+spec:
+  ttlSecondsAfterFinished: 300
+  backoffLimit: 0
+  template:
+    metadata:
+      labels:
+        app: k6-load-tests
+        test: inventory-service
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: k6
+          image: grafana/k6:latest
+          command:
+            - k6
+            - run
+            - /scripts/inventory-service-test.js
+          env:
+            - name: BASE_URL
+              value: "http://inventory-service:8002"
+          resources:
+            requests:
+              cpu: 200m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          volumeMounts:
+            - name: scripts
+              mountPath: /scripts
+              readOnly: true
+      volumes:
+        - name: scripts
+          configMap:
+            name: k6-scripts
+---
+# Orders Service Load Test Job
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: k6-orders-test
+  namespace: inventory-system
+  labels:
+    app: k6-load-tests
+    test: orders-service
+spec:
+  ttlSecondsAfterFinished: 300
+  backoffLimit: 0
+  template:
+    metadata:
+      labels:
+        app: k6-load-tests
+        test: orders-service
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: k6
+          image: grafana/k6:latest
+          command:
+            - k6
+            - run
+            - /scripts/orders-service-test.js
+          env:
+            - name: BASE_URL
+              value: "http://orders-service:8003"
+          resources:
+            requests:
+              cpu: 200m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          volumeMounts:
+            - name: scripts
+              mountPath: /scripts
+              readOnly: true
+      volumes:
+        - name: scripts
+          configMap:
+            name: k6-scripts
+---
+# Full Scenario Load Test Job
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: k6-full-scenario-test
+  namespace: inventory-system
+  labels:
+    app: k6-load-tests
+    test: full-scenario
+spec:
+  ttlSecondsAfterFinished: 300
+  backoffLimit: 0
+  template:
+    metadata:
+      labels:
+        app: k6-load-tests
+        test: full-scenario
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: k6
+          image: grafana/k6:latest
+          command:
+            - k6
+            - run
+            - /scripts/full-scenario-test.js
+          env:
+            - name: PRODUCTS_URL
+              value: "http://products-service:8001"
+            - name: INVENTORY_URL
+              value: "http://inventory-service:8002"
+            - name: ORDERS_URL
+              value: "http://orders-service:8003"
+          resources:
+            requests:
+              cpu: 200m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          volumeMounts:
+            - name: scripts
+              mountPath: /scripts
+              readOnly: true
+      volumes:
+        - name: scripts
+          configMap:
+            name: k6-scripts
